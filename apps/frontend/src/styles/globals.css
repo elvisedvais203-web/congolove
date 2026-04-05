@@ -1,0 +1,48 @@
+@import url("https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700&family=Sora:wght@500;600;700;800&display=swap");
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --bg: #06070e;
+  --panel: rgba(10, 15, 32, 0.75);
+  --text: #eef5ff;
+  --muted: #99a4c7;
+  --line: rgba(255, 255, 255, 0.08);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  min-height: 100vh;
+  font-family: Manrope, sans-serif;
+  background: radial-gradient(circle at 10% 10%, rgba(50, 184, 255, 0.15), transparent 35%),
+    radial-gradient(circle at 90% 5%, rgba(131, 91, 255, 0.17), transparent 45%),
+    var(--bg);
+  color: var(--text);
+}
+
+.glass {
+  background: var(--panel);
+  border: 1px solid var(--line);
+  -webkit-backdrop-filter: blur(12px);
+  backdrop-filter: blur(12px);
+}
+
+.card-enter {
+  animation: cardEnter 0.4s ease;
+}
+
+@keyframes cardEnter {
+  from {
+    opacity: 0;
+    transform: translateY(10px) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}

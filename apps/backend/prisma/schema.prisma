@@ -1,0 +1,320 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum PlanTier {
+  FREE
+  PREMIUM
+}
+
+enum SwipeAction {
+  LIKE
+  PASS
+}
+
+enum MessageType {
+  TEXT
+  IMAGE
+  VIDEO
+  VOICE
+  STICKER
+}
+
+enum PaymentStatus {
+  PENDING
+  SUCCESS
+  FAILED
+}
+
+enum UserRole {
+  USER
+  ADMIN
+  SUPERADMIN
+}
+
+enum ChatKind {
+  PRIVATE
+  GROUP
+}
+
+enum ChatMemberRole {
+  MEMBER
+  ADMIN
+}
+
+model User {
+  id               String        @id @default(uuid())
+  email            String?       @unique
+  phone            String        @unique
+  passwordHash     String
+  otpVerified      Boolean       @default(false)
+  planTier         PlanTier      @default(FREE)
+  reputation       Int           @default(50)
+  dataSaverEnabled Boolean       @default(false)
+  invisibleMode    Boolean       @default(false)
+  role             UserRole      @default(USER)
+  createdAt        DateTime      @default(now())
+  updatedAt        DateTime      @updatedAt
+
+  profile          Profile?
+  photos           Photo[]
+  sentLikes        Like[]        @relation("SentLikes")
+  receivedLikes    Like[]        @relation("ReceivedLikes")
+  matchesAsA       Match[]       @relation("MatchA")
+  matchesAsB       Match[]       @relation("MatchB")
+  messages         Message[]
+  subscriptions    Subscription[]
+  payments         Payment[]
+  reportsMade      UserReport[]  @relation("ReportsMade")
+  reportsReceived  UserReport[]  @relation("ReportsReceived")
+  auditLogs        AuditLog[]
+  followers        Follow[]      @relation("Followers")
+  following        Follow[]      @relation("Following")
+  stories          Story[]
+  storyViews       StoryView[]
+  chatMemberships  ChatMember[]
+  chatMessages     ChatMessage[]  @relation("ChatMessageSender")
+  chatReceipts     ChatMessageReceipt[]
+  chatReactions    ChatReaction[]
+}
+
+model Profile {
+  id            String   @id @default(uuid())
+  userId        String   @unique
+  displayName   String
+  bio           String?
+  city          String?
+  latitude      Float?
+  longitude     Float?
+  interests     String[]
+  verifiedBadge Boolean  @default(false)
+  lastActiveAt  DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model Photo {
+  id        String   @id @default(uuid())
+  userId    String
+  url       String
+  isPrimary Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model Like {
+  id         String      @id @default(uuid())
+  fromUserId String
+  toUserId   String
+  action     SwipeAction
+  createdAt  DateTime    @default(now())
+
+  fromUser User @relation("SentLikes", fields: [fromUserId], references: [id], onDelete: Cascade)
+  toUser   User @relation("ReceivedLikes", fields: [toUserId], references: [id], onDelete: Cascade)
+
+  @@unique([fromUserId, toUserId])
+}
+
+model Match {
+  id        String   @id @default(uuid())
+  userAId   String
+  userBId   String
+  createdAt DateTime @default(now())
+
+  userA User @relation("MatchA", fields: [userAId], references: [id], onDelete: Cascade)
+  userB User @relation("MatchB", fields: [userBId], references: [id], onDelete: Cascade)
+  messages Message[]
+
+  @@unique([userAId, userBId])
+}
+
+model Message {
+  id        String      @id @default(uuid())
+  matchId   String
+  senderId  String
+  type      MessageType @default(TEXT)
+  text      String?
+  mediaUrl  String?
+  isRead    Boolean     @default(false)
+  readAt    DateTime?
+  createdAt DateTime    @default(now())
+
+  sender User  @relation(fields: [senderId], references: [id], onDelete: Cascade)
+  match  Match @relation(fields: [matchId], references: [id], onDelete: Cascade)
+}
+
+model Follow {
+  id           String   @id @default(uuid())
+  followerId   String
+  followingId  String
+  approved     Boolean  @default(true)
+  createdAt    DateTime @default(now())
+
+  follower  User @relation("Following", fields: [followerId], references: [id], onDelete: Cascade)
+  following User @relation("Followers", fields: [followingId], references: [id], onDelete: Cascade)
+
+  @@unique([followerId, followingId])
+}
+
+model Story {
+  id          String   @id @default(uuid())
+  userId      String
+  mediaUrl    String
+  mediaType   String
+  caption     String?
+  expiresAt   DateTime
+  createdAt   DateTime @default(now())
+
+  user      User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  viewers   StoryView[]
+
+  @@index([userId, createdAt])
+}
+
+model StoryView {
+  id        String   @id @default(uuid())
+  storyId   String
+  viewerId  String
+  viewedAt  DateTime @default(now())
+
+  story  Story @relation(fields: [storyId], references: [id], onDelete: Cascade)
+  viewer User  @relation(fields: [viewerId], references: [id], onDelete: Cascade)
+
+  @@unique([storyId, viewerId])
+}
+
+model Subscription {
+  id          String    @id @default(uuid())
+  userId      String
+  startedAt   DateTime  @default(now())
+  expiresAt   DateTime
+  active      Boolean   @default(true)
+  autoRenew   Boolean   @default(false)
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model Payment {
+  id            String        @id @default(uuid())
+  userId        String
+  provider      String
+  amountCdf     Int
+  status        PaymentStatus @default(PENDING)
+  externalRef   String?
+  purpose       String
+  createdAt     DateTime      @default(now())
+  processedAt   DateTime?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model UserReport {
+  id             String   @id @default(uuid())
+  reporterId     String
+  reportedUserId String
+  reason         String
+  createdAt      DateTime @default(now())
+
+  reporter     User @relation("ReportsMade", fields: [reporterId], references: [id], onDelete: Cascade)
+  reportedUser User @relation("ReportsReceived", fields: [reportedUserId], references: [id], onDelete: Cascade)
+}
+
+model AuditLog {
+  id          String   @id @default(uuid())
+  userId      String?
+  action      String
+  method      String
+  path        String
+  ipAddress   String?
+  userAgent   String?
+  statusCode  Int
+  metadata    Json?
+  createdAt   DateTime @default(now())
+
+  user User? @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  @@index([userId, createdAt])
+}
+
+model Chat {
+  id        String       @id @default(cuid())
+  kind      ChatKind
+  title     String?
+  avatarUrl String?
+  createdAt DateTime     @default(now())
+  updatedAt DateTime     @updatedAt
+
+  members   ChatMember[]
+  messages  ChatMessage[]
+}
+
+model ChatMember {
+  id         String         @id @default(cuid())
+  chatId      String
+  userId      String
+  role        ChatMemberRole @default(MEMBER)
+  archivedAt  DateTime?
+  lastReadAt  DateTime?
+  joinedAt    DateTime       @default(now())
+
+  chat        Chat           @relation(fields: [chatId], references: [id], onDelete: Cascade)
+  user        User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([chatId, userId])
+  @@index([userId, archivedAt])
+}
+
+model ChatMessage {
+  id          String               @id @default(cuid())
+  chatId       String
+  senderId     String
+  type         MessageType         @default(TEXT)
+  text         String?
+  mediaUrl     String?
+  fileName     String?
+  durationSec  Int?
+  editedAt     DateTime?
+  deletedAt    DateTime?
+  createdAt    DateTime            @default(now())
+
+  chat         Chat                 @relation(fields: [chatId], references: [id], onDelete: Cascade)
+  sender       User                 @relation("ChatMessageSender", fields: [senderId], references: [id], onDelete: Cascade)
+  receipts     ChatMessageReceipt[]
+  reactions    ChatReaction[]
+
+  @@index([chatId, createdAt])
+}
+
+model ChatMessageReceipt {
+  id          String      @id @default(cuid())
+  messageId    String
+  userId       String
+  deliveredAt  DateTime   @default(now())
+  readAt       DateTime?
+
+  message      ChatMessage @relation(fields: [messageId], references: [id], onDelete: Cascade)
+  user         User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([messageId, userId])
+  @@index([userId, readAt])
+}
+
+model ChatReaction {
+  id          String      @id @default(cuid())
+  messageId    String
+  userId       String
+  emoji        String
+  createdAt    DateTime   @default(now())
+
+  message      ChatMessage @relation(fields: [messageId], references: [id], onDelete: Cascade)
+  user         User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([messageId, userId, emoji])
+  @@index([messageId, createdAt])
+}

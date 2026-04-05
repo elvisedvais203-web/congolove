@@ -1,0 +1,60 @@
+services:
+  - type: web
+    name: congolove-api
+    runtime: node
+    plan: starter
+    rootDir: .
+    buildCommand: npm install && npm run build --workspace @kongo-love/backend
+    startCommand: npm run start --workspace @kongo-love/backend
+    healthCheckPath: /api/health
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: API_PORT
+        value: 10000
+      - key: API_BASE_URL
+        value: https://api.congolove.com
+      - key: CORS_ORIGIN
+        value: https://app.congolove.com
+      - key: DATABASE_URL
+        sync: false
+      - key: REDIS_URL
+        sync: false
+      - key: JWT_ACCESS_SECRET
+        sync: false
+      - key: JWT_REFRESH_SECRET
+        sync: false
+      - key: JWT_ACCESS_TTL
+        value: 15m
+      - key: JWT_REFRESH_TTL
+        value: 30d
+      - key: OTP_PROVIDER
+        value: real
+      - key: OTP_SMS_PROVIDER
+        value: twilio
+      - key: OTP_EMAIL_PROVIDER
+        value: resend
+      - key: OTP_SENDER_NAME
+        value: KongoLove
+      - key: TWILIO_ACCOUNT_SID
+        sync: false
+      - key: TWILIO_AUTH_TOKEN
+        sync: false
+      - key: TWILIO_FROM
+        sync: false
+      - key: RESEND_API_KEY
+        sync: false
+      - key: RESEND_FROM_EMAIL
+        sync: false
+      - key: CLOUDINARY_CLOUD_NAME
+        sync: false
+      - key: CLOUDINARY_API_KEY
+        sync: false
+      - key: CLOUDINARY_API_SECRET
+        sync: false
+      - key: SUPERADMIN_EMAIL
+        sync: false
+      - key: SUPERADMIN_PHONE
+        sync: false
+      - key: SUPERADMIN_PASSWORD
+        sync: false
