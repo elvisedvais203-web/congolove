@@ -3,6 +3,7 @@ import { prisma } from "../config/db";
 import { redis } from "../config/redis";
 import { checkFreemiumLimit } from "./freemium.service";
 import { checkMessageSpam } from "./spam-detection.service";
+import { writeAuditLog } from "./audit.service";
 
 function usageKey(userId: string, action: "likes" | "messages"): string {
   const date = new Date().toISOString().slice(0, 10);
@@ -36,6 +37,19 @@ export async function saveMessage(input: {
 
   const spamCheck = await checkMessageSpam(input.senderId, input.text);
   if (spamCheck.blocked) {
+    await writeAuditLog({
+      userId: input.senderId,
+      action: "MESSAGE_BLOCKED_SPAM",
+      method: "MATCH_SEND",
+      path: `/messages/${input.matchId}`,
+      statusCode: 400,
+      metadata: {
+        reason: spamCheck.reason ?? "spam",
+        type: input.type,
+        hasText: Boolean(input.text),
+        hasMedia: Boolean(input.mediaUrl)
+      }
+    });
     throw new Error(spamCheck.reason ?? "Message bloque pour suspicion de spam");
   }
 

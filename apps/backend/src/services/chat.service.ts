@@ -3,6 +3,7 @@ import { prisma } from "../config/db";
 import { checkMessageSpam } from "./spam-detection.service";
 import { canSendMessage } from "./message.service";
 import { ApiError } from "../utils/ApiError";
+import { writeAuditLog } from "./audit.service";
 
 const ONLINE_WINDOW_MS = 45_000;
 
@@ -359,6 +360,19 @@ export async function sendChatMessage(
 
   const spamCheck = await checkMessageSpam(userId, payload.text);
   if (spamCheck.blocked) {
+    await writeAuditLog({
+      userId,
+      action: "MESSAGE_BLOCKED_SPAM",
+      method: "CHAT_SEND",
+      path: `/chats/${payload.chatId}/messages`,
+      statusCode: 400,
+      metadata: {
+        reason: spamCheck.reason ?? "spam",
+        type: payload.type,
+        hasText: Boolean(payload.text),
+        hasMedia: Boolean(payload.mediaUrl)
+      }
+    });
     throw new ApiError(400, spamCheck.reason ?? "Message bloque");
   }
 

@@ -11,16 +11,20 @@ export function auditTrail(req: AuthRequest, res: Response, next: NextFunction):
     }
 
     const action = `${req.method} ${req.path}`;
-    await writeAuditLog({
-      userId: req.user?.userId,
-      action,
-      method: req.method,
-      path: req.originalUrl,
-      ipAddress: req.ip,
-      userAgent: req.get("user-agent"),
-      statusCode: res.statusCode,
-      metadata: { durationMs: Date.now() - start }
-    });
+    try {
+      await writeAuditLog({
+        userId: req.user?.userId,
+        action,
+        method: req.method,
+        path: req.originalUrl,
+        ipAddress: req.ip,
+        userAgent: req.get("user-agent"),
+        statusCode: res.statusCode,
+        metadata: { durationMs: Date.now() - start }
+      });
+    } catch (error) {
+      console.warn("[AUDIT] Echec ecriture journal:", (error as Error).message);
+    }
   });
 
   next();

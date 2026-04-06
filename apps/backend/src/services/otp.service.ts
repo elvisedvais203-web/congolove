@@ -230,15 +230,25 @@ async function deliverOtp(identifier: string, code: string): Promise<void> {
   await sendEmailWithResend(identifier, subject, text, html);
 }
 
-export async function sendOtp(identifier: string): Promise<{ sent: boolean; expiresInSeconds: number; destination: string }> {
+export async function sendOtp(identifier: string): Promise<{ sent: boolean; expiresInSeconds: number; destination: string; debugCode?: string }> {
   const code = `${Math.floor(100000 + Math.random() * 900000)}`;
   await storeOtp(identifier, code);
-  await deliverOtp(identifier, code);
+  let delivered = true;
+  try {
+    await deliverOtp(identifier, code);
+  } catch (error) {
+    delivered = false;
+    if (env.nodeEnv === "production") {
+      throw error;
+    }
+    console.warn("[OTP] Fallback dev active, provider indisponible:", (error as Error).message);
+  }
 
   return {
     sent: true,
     expiresInSeconds: OTP_TTL_SECONDS,
-    destination: maskIdentifier(identifier)
+    destination: maskIdentifier(identifier),
+    debugCode: env.nodeEnv === "production" || delivered ? undefined : code
   };
 }
 

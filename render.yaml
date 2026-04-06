@@ -13,9 +13,9 @@ services:
       - key: API_PORT
         value: 10000
       - key: API_BASE_URL
-        value: https://api.congolove.com
+        value: https://api.congo-love.com
       - key: CORS_ORIGIN
-        value: https://app.congolove.com
+        value: https://app.congo-love.com
       - key: DATABASE_URL
         sync: false
       - key: REDIS_URL

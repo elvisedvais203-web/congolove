@@ -90,3 +90,41 @@ export async function swipe(userId: string, targetUserId: string, action: "LIKE"
 
   return { matched: false };
 }
+
+export async function getCompatibilityScore(userId: string, targetUserId: string) {
+  const [mine, target] = await Promise.all([
+    prisma.profile.findUnique({ where: { userId } }),
+    prisma.profile.findUnique({ where: { userId: targetUserId } })
+  ]);
+
+  if (!mine || !target) {
+    return {
+      percent: 0,
+      reasons: ["profil incomplet"]
+    };
+  }
+
+  const mineInterests = mine.interests.map((value) => value.toLowerCase());
+  const targetInterests = target.interests.map((value) => value.toLowerCase());
+  const commonInterests = mineInterests.filter((interest) => targetInterests.includes(interest));
+
+  const commonRatio = mineInterests.length
+    ? commonInterests.length / Math.max(1, Math.min(mineInterests.length, targetInterests.length || 1))
+    : 0;
+
+  const cityMatch = Boolean(mine.city && target.city && mine.city.toLowerCase() === target.city.toLowerCase());
+
+  const activityGapHours = Math.abs(mine.lastActiveAt.getTime() - target.lastActiveAt.getTime()) / (1000 * 60 * 60);
+  const activityScore = Math.max(0, 1 - activityGapHours / 48);
+
+  const raw = commonRatio * 0.62 + (cityMatch ? 0.2 : 0) + activityScore * 0.18;
+  const percent = Math.max(1, Math.min(99, Math.round(raw * 100)));
+
+  const reasons = [
+    commonInterests.length > 0 ? `${commonInterests.length} interets en commun` : "profils differents",
+    cityMatch ? "meme ville" : "ville differente",
+    activityScore > 0.55 ? "rythme d'activite proche" : "rythme d'activite different"
+  ];
+
+  return { percent, reasons };
+}

@@ -9,7 +9,14 @@ cloudinary.config({
 
 export async function uploadMedia(filePath: string, folder: string): Promise<string> {
   if (env.mediaProvider !== "cloudinary") {
-    return `https://cdn.example.com/${folder}/${Date.now()}`;
+    if (env.nodeEnv === "production") {
+      throw new Error("MEDIA_PROVIDER invalide en production. Configurez Cloudinary.");
+    }
+    return `http://localhost/mock-media/${folder}/${Date.now()}`;
+  }
+
+  if (!process.env.CLOUDINARY_CLOUD_NAME || !process.env.CLOUDINARY_API_KEY || !process.env.CLOUDINARY_API_SECRET) {
+    throw new Error("Cloudinary non configure. Renseignez CLOUDINARY_CLOUD_NAME/API_KEY/API_SECRET.");
   }
 
   const uploaded = await cloudinary.uploader.upload(filePath, {

@@ -1,48 +1,336 @@
 @import url("https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700&family=Sora:wght@500;600;700;800&display=swap");
+@import url("https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700&family=Sora:wght@500;600;700;800&display=swap");
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
 :root {
   --bg: #06070e;
-  --panel: rgba(10, 15, 32, 0.75);
+  --panel: rgba(8, 13, 30, 0.82);
+  --panel-hover: rgba(16, 24, 50, 0.92);
   --text: #eef5ff;
-  --muted: #99a4c7;
+  --muted: #8896b8;
   --line: rgba(255, 255, 255, 0.08);
+  --neon-blue: #32b8ff;
+  --neon-violet: #835bff;
+  --neon-pink: #ff3cac;
+  --neon-gold: #f4c067;
+  --neon-cyan: #00fff5;
+  --neon-green: #39ff14;
 }
 
 * {
   box-sizing: border-box;
 }
 
+/* ── Scrollbar néon ── */
+::-webkit-scrollbar {
+  width: 5px;
+  height: 5px;
+}
+::-webkit-scrollbar-track {
+  background: #06070e;
+}
+::-webkit-scrollbar-thumb {
+  background: linear-gradient(180deg, var(--neon-blue), var(--neon-violet));
+  border-radius: 99px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: var(--neon-blue);
+}
+
+/* ── Body avec fond néon animé ── */
 body {
   margin: 0;
   min-height: 100vh;
   font-family: Manrope, sans-serif;
-  background: radial-gradient(circle at 10% 10%, rgba(50, 184, 255, 0.15), transparent 35%),
-    radial-gradient(circle at 90% 5%, rgba(131, 91, 255, 0.17), transparent 45%),
-    var(--bg);
+  background-color: var(--bg);
+  background-image:
+    radial-gradient(ellipse 80% 40% at 10% 0%, rgba(50, 184, 255, 0.12) 0%, transparent 60%),
+    radial-gradient(ellipse 60% 50% at 90% 5%, rgba(131, 91, 255, 0.14) 0%, transparent 60%),
+    radial-gradient(ellipse 40% 30% at 50% 100%, rgba(255, 60, 172, 0.06) 0%, transparent 60%);
   color: var(--text);
 }
 
+/* ── Glass card ── */
 .glass {
+  background: var(--panel);
+  border: 1px solid var(--line);
+  -webkit-backdrop-filter: blur(16px) saturate(1.4);
+  backdrop-filter: blur(16px) saturate(1.4);
+  box-shadow: 0 4px 32px rgba(0, 0, 0, 0.45), inset 0 1px 0 rgba(255, 255, 255, 0.05);
+}
+
+.glass:hover {
+  background: var(--panel-hover);
+  border-color: rgba(50, 184, 255, 0.15);
+}
+
+/* ── Neon glow borders ── */
+.neon-border {
+  border: 1px solid rgba(50, 184, 255, 0.35);
+  box-shadow: 0 0 12px rgba(50, 184, 255, 0.2), inset 0 0 12px rgba(50, 184, 255, 0.03);
+}
+
+.neon-border-violet {
+  border: 1px solid rgba(131, 91, 255, 0.4);
+  box-shadow: 0 0 12px rgba(131, 91, 255, 0.25);
+}
+
+.neon-border-pink {
+  border: 1px solid rgba(255, 60, 172, 0.4);
+  box-shadow: 0 0 12px rgba(255, 60, 172, 0.25);
+}
+
+.neon-border-gold {
+  border: 1px solid rgba(244, 192, 103, 0.4);
+  box-shadow: 0 0 12px rgba(244, 192, 103, 0.25);
+}
+
+/* ── Neon text glow ── */
+.neon-text {
+  color: var(--neon-blue);
+  text-shadow: 0 0 12px rgba(50, 184, 255, 0.8), 0 0 30px rgba(50, 184, 255, 0.4);
+}
+
+.neon-text-violet {
+  color: var(--neon-violet);
+  text-shadow: 0 0 12px rgba(131, 91, 255, 0.8);
+}
+
+.neon-text-pink {
+  color: var(--neon-pink);
+  text-shadow: 0 0 12px rgba(255, 60, 172, 0.8);
+}
+
+.neon-text-gold {
+  color: var(--neon-gold);
+  text-shadow: 0 0 12px rgba(244, 192, 103, 0.8);
+}
+
+/* ── Boutons néon ── */
+.btn-neon {
+  background: linear-gradient(135deg, var(--neon-blue) 0%, var(--neon-violet) 100%);
+  color: #fff;
+  font-weight: 700;
+  border: none;
+  cursor: pointer;
+  transition: filter 0.2s, transform 0.15s, box-shadow 0.2s;
+  box-shadow: 0 0 20px rgba(50, 184, 255, 0.35);
+}
+
+.btn-neon:hover {
+  filter: brightness(1.15);
+  transform: translateY(-1px);
+  box-shadow: 0 0 35px rgba(50, 184, 255, 0.6), 0 0 15px rgba(131, 91, 255, 0.4);
+}
+
+.btn-neon:active {
+  transform: translateY(0);
+}
+
+.btn-neon:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  filter: none;
+  transform: none;
+}
+
+.btn-gold {
+  background: linear-gradient(135deg, #f4c067 0%, #ff3cac 100%);
+  color: #1a0a00;
+  font-weight: 700;
+  cursor: pointer;
+  transition: filter 0.2s, transform 0.15s, box-shadow 0.2s;
+  box-shadow: 0 0 20px rgba(244, 192, 103, 0.4);
+}
+
+.btn-gold:hover {
+  filter: brightness(1.1);
+  transform: translateY(-1px);
+  box-shadow: 0 0 35px rgba(244, 192, 103, 0.6);
+}
+
+.btn-outline-neon {
+  background: transparent;
+  border: 1px solid rgba(50, 184, 255, 0.45);
+  color: var(--neon-blue);
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.btn-outline-neon:hover {
+  background: rgba(50, 184, 255, 0.12);
+  border-color: var(--neon-blue);
+  box-shadow: 0 0 18px rgba(50, 184, 255, 0.3);
+}
+
+/* ── Inputs néon ── */
+.input-neon {
+  background: rgba(5, 10, 25, 0.8);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  color: var(--text);
+  transition: border-color 0.2s, box-shadow 0.2s;
+  outline: none;
+}
+
+.input-neon::placeholder {
+  color: var(--muted);
+}
+
+.input-neon:focus {
+  border-color: rgba(50, 184, 255, 0.6);
+  box-shadow: 0 0 0 3px rgba(50, 184, 255, 0.12), 0 0 15px rgba(50, 184, 255, 0.15);
+}
+
+/* ── Cards animées ── */
+.card-enter {
+  animation: cardEnter 0.4s ease both;
+}
+
+.card-hover {
+  transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
+}
+
+.card-hover:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 8px 40px rgba(0, 0, 0, 0.5), 0 0 20px rgba(50, 184, 255, 0.12);
+  border-color: rgba(50, 184, 255, 0.2);
+}
+
+/* ── Badge néon ── */
+.badge-neon {
+  background: rgba(50, 184, 255, 0.15);
+  border: 1px solid rgba(50, 184, 255, 0.35);
+  color: var(--neon-blue);
+  font-size: 0.7rem;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  padding: 0.2rem 0.6rem;
+  border-radius: 99px;
+}
+
+.badge-violet {
+  background: rgba(131, 91, 255, 0.15);
+  border: 1px solid rgba(131, 91, 255, 0.35);
+  color: var(--neon-violet);
+}
+
+.badge-gold {
+  background: rgba(244, 192, 103, 0.15);
+  border: 1px solid rgba(244, 192, 103, 0.35);
+  color: var(--neon-gold);
+}
+
+.badge-pink {
+  background: rgba(255, 60, 172, 0.15);
+  border: 1px solid rgba(255, 60, 172, 0.35);
+  color: var(--neon-pink);
+}
+
+/* ── Neon divider ── */
+.neon-divider {
+  height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(50, 184, 255, 0.4), rgba(131, 91, 255, 0.4), transparent);
+  margin: 1.5rem 0;
+}
+
+/* ── Online dot ── */
+.online-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: var(--neon-green);
+  box-shadow: 0 0 8px var(--neon-green);
+  animation: pulseNeonGreen 2s ease-in-out infinite;
+}
+
+/* ── Stat card ── */
+.stat-card {
   background: var(--panel);
   border: 1px solid var(--line);
   -webkit-backdrop-filter: blur(12px);
   backdrop-filter: blur(12px);
+  transition: transform 0.2s, box-shadow 0.2s, border-color 0.2s;
 }
 
-.card-enter {
-  animation: cardEnter 0.4s ease;
+.stat-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 0 25px rgba(50, 184, 255, 0.15);
+  border-color: rgba(50, 184, 255, 0.2);
 }
 
+/* ── Swipe actions ── */
+.swipe-like {
+  border: 2px solid var(--neon-green);
+  color: var(--neon-green);
+  box-shadow: 0 0 20px rgba(57, 255, 20, 0.3);
+}
+
+.swipe-pass {
+  border: 2px solid #ff4d4f;
+  color: #ff4d4f;
+  box-shadow: 0 0 20px rgba(255, 77, 79, 0.25);
+}
+
+/* ── Keyframes ── */
 @keyframes cardEnter {
   from {
     opacity: 0;
-    transform: translateY(10px) scale(0.98);
+    transform: translateY(14px) scale(0.97);
   }
   to {
     opacity: 1;
     transform: translateY(0) scale(1);
   }
+}
+
+@keyframes pulseNeonGreen {
+  0%, 100% { box-shadow: 0 0 6px var(--neon-green); }
+  50% { box-shadow: 0 0 16px var(--neon-green), 0 0 30px rgba(57, 255, 20, 0.4); }
+}
+
+@keyframes pulseNeon {
+  0%, 100% { box-shadow: 0 0 20px rgba(50, 184, 255, 0.25); }
+  50% { box-shadow: 0 0 50px rgba(50, 184, 255, 0.65), 0 0 80px rgba(131, 91, 255, 0.3); }
+}
+
+/* ── Progress bar néon ── */
+.progress-neon {
+  background: rgba(255, 255, 255, 0.06);
+  border-radius: 99px;
+  overflow: hidden;
+}
+
+.progress-neon-fill {
+  background: linear-gradient(90deg, var(--neon-blue), var(--neon-violet));
+  height: 100%;
+  border-radius: 99px;
+  transition: width 0.5s ease;
+  box-shadow: 0 0 10px rgba(50, 184, 255, 0.5);
+}
+
+/* ── Message bubbles ── */
+.msg-bubble-out {
+  background: linear-gradient(135deg, rgba(50, 184, 255, 0.2), rgba(131, 91, 255, 0.18));
+  border: 1px solid rgba(50, 184, 255, 0.25);
+  box-shadow: 0 2px 12px rgba(50, 184, 255, 0.1);
+}
+
+.msg-bubble-in {
+  background: rgba(16, 24, 50, 0.85);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+/* ── Nav active neon line ── */
+.nav-active {
+  color: var(--neon-blue);
+  text-shadow: 0 0 8px rgba(50, 184, 255, 0.6);
+}
+
+.nav-active-bg {
+  background: rgba(50, 184, 255, 0.1);
+  border: 1px solid rgba(50, 184, 255, 0.2);
+  box-shadow: 0 0 15px rgba(50, 184, 255, 0.12);
 }

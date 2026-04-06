@@ -5,6 +5,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { AuthGuard } from "./AuthGuard";
 import { SectionHeader } from "./SectionHeader";
 import { fetchCsrfToken } from "../services/security";
+import { getAiIcebreakers } from "../services/ai";
 import {
   archiveConversation,
   createGroupChat,
@@ -107,6 +108,8 @@ export function UltraTelegramChat({ contactId }: Props) {
   const [incomingCall, setIncomingCall] = useState<IncomingCall | null>(null);
   const [callMode, setCallMode] = useState<"audio" | "video" | null>(null);
   const [callNotice, setCallNotice] = useState<string | null>(null);
+  const [icebreakerLoading, setIcebreakerLoading] = useState(false);
+  const [icebreakers, setIcebreakers] = useState<string[]>([]);
 
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const cameraInputRef = useRef<HTMLInputElement | null>(null);
@@ -336,7 +339,42 @@ export function UltraTelegramChat({ contactId }: Props) {
   };
 
   const handleFileSelection = async (file: File, forcedType?: ChatMessageType) => {
-    const mediaUrl = await fileToDataUrl(file);
+    let mediaUrl = "";
+    try {
+      const csrf = await fetchCsrfToken();
+      const token = localStorage.getItem("accessToken");
+      if (!token) {
+        throw new Error("Session absente");
+      }
+
+      const formData = new FormData();
+      formData.append("file", file);
+      formData.append("folder", "messages");
+
+      const uploadRes = await fetch("/api/upload", {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "x-csrf-token": csrf
+        },
+        body: formData
+      });
+
+      if (!uploadRes.ok) {
+        throw new Error("Upload backend indisponible");
+      }
+
+      const uploadJson = (await uploadRes.json()) as { url?: string };
+      if (!uploadJson.url) {
+        throw new Error("URL upload manquante");
+      }
+
+      mediaUrl = uploadJson.url;
+    } catch {
+      // Fallback local preview in development/sandbox environments.
+      mediaUrl = await fileToDataUrl(file);
+    }
+
     let type: ChatMessageType = forcedType ?? "IMAGE";
     if (!forcedType) {
       if (file.type.startsWith("video/")) {
@@ -724,6 +762,21 @@ export function UltraTelegramChat({ contactId }: Props) {
     setTimeout(() => socket.emit("typing:stop", { chatId: activeChatId, userId: me.id }), 700);
   };
 
+  const generateIcebreakers = async () => {
+    try {
+      setIcebreakerLoading(true);
+      const items = await getAiIcebreakers(activeChatId ?? undefined);
+      setIcebreakers(items);
+      if (items[0]) {
+        setText(items[0]);
+      }
+    } catch {
+      setCallNotice("Assistant IA indisponible pour le moment.");
+    } finally {
+      setIcebreakerLoading(false);
+    }
+  };
+
   return (
     <AuthGuard>
       <section>
@@ -914,6 +967,7 @@ export function UltraTelegramChat({ contactId }: Props) {
                           {editingMessageId === message.id ? (
                             <div className="mb-2 flex gap-2">
                               <input
+                                aria-label="Modifier message"
                                 value={editingText}
                                 onChange={(event) => setEditingText(event.target.value)}
                                 className="flex-1 rounded-xl border border-white/10 bg-black/30 px-3 py-2 text-sm outline-none"
@@ -1002,6 +1056,9 @@ export function UltraTelegramChat({ contactId }: Props) {
 
                 <div className="mt-4 rounded-3xl border border-white/10 bg-[#070c1d]/80 p-3">
                   <div className="mb-3 flex flex-wrap gap-2">
+                    <button onClick={() => void generateIcebreakers()} className="rounded-full bg-neoblue/20 px-3 py-2 text-sm text-neoblue">
+                      {icebreakerLoading ? "IA..." : "IA sujet"}
+                    </button>
                     <button onClick={() => setShowEmoji((prev) => !prev)} className="rounded-full bg-white/10 px-3 py-2 text-sm text-white">Emoji</button>
                     <button onClick={() => setShowSticker((prev) => !prev)} className="rounded-full bg-white/10 px-3 py-2 text-sm text-white">Sticker</button>
                     <button onClick={() => fileInputRef.current?.click()} className="rounded-full bg-white/10 px-3 py-2 text-sm text-white">Fichier</button>
@@ -1010,6 +1067,20 @@ export function UltraTelegramChat({ contactId }: Props) {
                       {isRecordingMine ? "Stop micro" : "Micro"}
                     </button>
                   </div>
+
+                  {icebreakers.length > 0 && (
+                    <div className="mb-3 flex flex-wrap gap-2">
+                      {icebreakers.slice(0, 3).map((item) => (
+                        <button
+                          key={item}
+                          onClick={() => setText(item)}
+                          className="rounded-full border border-neoblue/30 bg-neoblue/10 px-3 py-1.5 text-xs text-neoblue"
+                        >
+                          {item}
+                        </button>
+                      ))}
+                    </div>
+                  )}
 
                   {showEmoji && (
                     <div className="mb-3 flex flex-wrap gap-2">
@@ -1051,6 +1122,7 @@ export function UltraTelegramChat({ contactId }: Props) {
                     ref={fileInputRef}
                     type="file"
                     accept="image/*,video/*,audio/*"
+                    aria-label="Selectionner un fichier"
                     className="hidden"
                     onChange={(event) => {
                       const file = event.target.files?.[0];
@@ -1064,7 +1136,7 @@ export function UltraTelegramChat({ contactId }: Props) {
                     ref={cameraInputRef}
                     type="file"
                     accept="image/*,video/*"
-                    capture="environment"
+                    aria-label="Camera ou galerie"
                     className="hidden"
                     onChange={(event) => {
                       const file = event.target.files?.[0];

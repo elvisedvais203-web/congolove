@@ -11,6 +11,10 @@ import storyRoutes from "./story.routes";
 import chatRoutes from "./chat.routes";
 import presenceRoutes from "./presence.routes";
 import searchRoutes from "./search.routes";
+import aiRoutes from "./ai.routes";
+import mediaRoutes from "./media.routes";
+import notificationsRoutes from "./notifications.routes";
+import paymentWebhookRoutes from "./payment-webhook.routes";
 
 const router = Router();
 
@@ -27,5 +31,9 @@ router.use("/stories", storyRoutes);
 router.use("/chats", chatRoutes);
 router.use("/presence", presenceRoutes);
 router.use("/search", searchRoutes);
+router.use("/ai", aiRoutes);
+router.use("/media", mediaRoutes);
+router.use("/notifications", notificationsRoutes);
+router.use("/webhooks/payments", paymentWebhookRoutes);
 
 export default router;

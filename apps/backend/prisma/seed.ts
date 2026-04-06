@@ -169,6 +169,8 @@ async function main() {
   if (env.superAdminEmail && env.superAdminPhone && env.superAdminPassword) {
     const superAdminPhone = normalizeRdcPhone(env.superAdminPhone);
     const superAdminHash = await bcrypt.hash(env.superAdminPassword, 12);
+    const superAdminName = process.env.SUPERADMIN_NAME ?? "Super Admin";
+    const superAdminCreatedAt = process.env.SUPERADMIN_CREATED_AT ? new Date(process.env.SUPERADMIN_CREATED_AT) : undefined;
 
     await prisma.user.upsert({
       where: { phone: superAdminPhone },
@@ -186,9 +188,10 @@ async function main() {
         otpVerified: true,
         role: "SUPERADMIN",
         planTier: "PREMIUM",
+        ...(superAdminCreatedAt ? { createdAt: superAdminCreatedAt } : {}),
         profile: {
           create: {
-            displayName: "Super Admin",
+            displayName: superAdminName,
             bio: "Compte fondateur",
             city: "Kinshasa",
             interests: ["admin", "security", "growth"],

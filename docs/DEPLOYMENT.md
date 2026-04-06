@@ -70,3 +70,28 @@
 - Activer audit trail: verifier la table audit_logs et brancher export SIEM
 - Anti-spam chat: seuils Redis en place (flood, repetition, liens)
 - Executer le smoke test: npm run test:security:smoke --workspace @kongo-love/backend
+
+## Variables critiques (bloquantes prod)
+- OAuth Google:
+   - OAUTH_GOOGLE_CLIENT_ID
+   - OAUTH_GOOGLE_CLIENT_SECRET
+   - OAUTH_GOOGLE_REDIRECT_URI
+- OAuth Apple:
+   - OAUTH_APPLE_CLIENT_ID
+   - OAUTH_APPLE_TEAM_ID
+   - OAUTH_APPLE_KEY_ID
+   - OAUTH_APPLE_PRIVATE_KEY
+   - OAUTH_APPLE_REDIRECT_URI
+- Upload media Cloudinary:
+   - MEDIA_PROVIDER=cloudinary
+   - CLOUDINARY_CLOUD_NAME
+   - CLOUDINARY_API_KEY
+   - CLOUDINARY_API_SECRET
+- Mobile Money API reelle (optionnel sandbox):
+   - MM_AIRTEL_API_URL / MM_AIRTEL_API_TOKEN
+   - MM_ORANGE_API_URL / MM_ORANGE_API_TOKEN
+   - MM_MPESA_API_URL / MM_MPESA_API_TOKEN
+   - MM_AFRICELL_API_URL / MM_AFRICELL_API_TOKEN
+   - MM_AFRIMONEY_API_URL / MM_AFRIMONEY_API_TOKEN
+- Webhook paiement:
+   - PAYMENT_WEBHOOK_SECRET

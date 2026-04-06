@@ -34,7 +34,6 @@ export async function processPremiumPayment(input: PremiumPaymentInput) {
     where: { id: payment.id },
     data: {
       status: result.status,
-      externalRef: result.providerTxId,
       processedAt: new Date()
     }
   });

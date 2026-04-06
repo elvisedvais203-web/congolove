@@ -1,13 +1,22 @@
 import { ApiError } from "./ApiError";
+import { parsePhoneNumberFromString } from "libphonenumber-js";
 
-const RDC_PHONE_REGEX = /^\+?243\d{9}$/;
-
-export function normalizeRdcPhone(rawPhone: string): string {
-  const compact = rawPhone.replace(/[\s\-()]/g, "");
-
-  if (!RDC_PHONE_REGEX.test(compact)) {
-    throw new ApiError(400, "Numero invalide. Utilisez un numero RDC commençant par +243.");
+export function normalizeInternationalPhone(rawPhone: string): string {
+  const compact = String(rawPhone ?? "").trim().replace(/[\s\-()]/g, "");
+  if (!compact) {
+    throw new ApiError(400, "Numero requis.");
   }
 
-  return compact.startsWith("+") ? compact : `+${compact}`;
+  if (!compact.startsWith("+")) {
+    throw new ApiError(400, "Numero invalide. Utilisez le format international avec prefixe (ex: +243..., +33..., +1...).");
+  }
+
+  const parsed = parsePhoneNumberFromString(compact);
+  if (!parsed || !parsed.isValid()) {
+    throw new ApiError(400, "Numero invalide. Verifiez le prefixe pays et le format du numero.");
+  }
+
+  return parsed.number;
 }
+
+export const normalizeRdcPhone = normalizeInternationalPhone;
