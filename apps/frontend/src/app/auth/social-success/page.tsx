@@ -1,9 +1,9 @@
 "use client";
 
 import { useRouter, useSearchParams } from "next/navigation";
-import { useEffect, useMemo } from "react";
+import { Suspense, useEffect, useMemo } from "react";
 
-export default function SocialSuccessPage() {
+function SocialSuccessContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
 
@@ -52,5 +52,20 @@ export default function SocialSuccessPage() {
         Finalisation de la connexion {payload.provider ? `(${payload.provider})` : ""}...
       </p>
     </section>
+  );
+}
+
+export default function SocialSuccessPage() {
+  return (
+    <Suspense
+      fallback={
+        <section className="mx-auto mt-12 max-w-lg rounded-3xl border border-white/15 bg-[#0a1125f0] p-6 text-center">
+          <h1 className="font-heading text-3xl text-white">Connexion sociale</h1>
+          <p className="mt-3 text-sm text-slate-300">Finalisation de la connexion...</p>
+        </section>
+      }
+    >
+      <SocialSuccessContent />
+    </Suspense>
   );
 }

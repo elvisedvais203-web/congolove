@@ -99,7 +99,7 @@ export default function AuthPage() {
                   onChange={(e) => setPassword(e.target.value)}
                   onKeyDown={(e) => e.key === "Enter" && void submit()}
                   className="input-neon w-full rounded-2xl px-4 py-3.5 pr-12 text-sm"
-                  placeholder="••••••••"
+                  placeholder="********"
                   autoComplete="current-password"
                   disabled={loading}
                 />

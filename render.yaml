@@ -13,9 +13,9 @@ services:
       - key: API_PORT
         value: 10000
       - key: API_BASE_URL
-        value: https://api.congo-love.com
+        sync: false
       - key: CORS_ORIGIN
-        value: https://app.congo-love.com
+        sync: false
       - key: DATABASE_URL
         sync: false
       - key: REDIS_URL
@@ -57,4 +57,19 @@ services:
       - key: SUPERADMIN_PHONE
         sync: false
       - key: SUPERADMIN_PASSWORD
+        sync: false
+
+  - type: web
+    name: congolove-web
+    runtime: node
+    plan: starter
+    rootDir: .
+    buildCommand: npm install && npm run build --workspace @kongo-love/frontend
+    startCommand: npm run start --workspace @kongo-love/frontend
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: NEXT_PUBLIC_API_URL
+        sync: false
+      - key: NEXT_PUBLIC_SOCKET_URL
         sync: false
