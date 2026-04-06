@@ -69,6 +69,8 @@ services:
     envVars:
       - key: NODE_ENV
         value: production
+      - key: PORT
+        value: 10000
       - key: NEXT_PUBLIC_API_URL
         sync: false
       - key: NEXT_PUBLIC_SOCKET_URL
