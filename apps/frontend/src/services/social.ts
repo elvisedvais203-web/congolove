@@ -27,3 +27,33 @@ export async function unfollowUser(followingId: string, csrfToken: string) {
   );
   return data;
 }
+
+export async function getFeed(limit = 20) {
+  const { data } = await api.get("/social/feed", { params: { limit } });
+  return data;
+}
+
+export async function createFeedPost(payload: { content: string; mediaUrl?: string }, csrfToken: string) {
+  const { data } = await api.post("/social/feed", payload, {
+    headers: { "x-csrf-token": csrfToken }
+  });
+  return data;
+}
+
+export async function likeFeedPost(postId: string, csrfToken: string) {
+  const { data } = await api.post(`/social/feed/${postId}/like`, {}, {
+    headers: { "x-csrf-token": csrfToken }
+  });
+  return data;
+}
+
+export async function commentFeedPost(postId: string, content: string, csrfToken: string) {
+  const { data } = await api.post(
+    `/social/feed/${postId}/comment`,
+    { content },
+    {
+      headers: { "x-csrf-token": csrfToken }
+    }
+  );
+  return data;
+}

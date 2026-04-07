@@ -6,7 +6,7 @@ export async function getStoryFeed() {
 }
 
 export async function createStory(
-  payload: { mediaUrl: string; mediaType: "IMAGE" | "VIDEO"; caption?: string },
+  payload: { mediaUrl: string; mediaType: "IMAGE" | "VIDEO"; caption?: string; visibility?: "PUBLIC" | "FOLLOWERS" },
   csrfToken: string
 ) {
   const { data } = await api.post("/stories", payload, {

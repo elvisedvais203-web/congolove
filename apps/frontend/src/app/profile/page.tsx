@@ -18,6 +18,7 @@ async function fileToDataUrl(file: File) {
 export default function ProfilePage() {
   const [profile, setProfile] = useState<any>(null);
   const [status, setStatus] = useState("");
+  const [photoUploading, setPhotoUploading] = useState(false);
   const [interestInput, setInterestInput] = useState("");
   const [relationshipGoal, setRelationshipGoal] = useState<"MARRIAGE" | "SERIOUS" | "FRIENDSHIP" | "FUN">("SERIOUS");
   const [verificationStatement, setVerificationStatement] = useState("Je confirme etre la vraie personne presente sur ce compte.");
@@ -97,6 +98,42 @@ export default function ProfilePage() {
     }
   };
 
+  const uploadProfilePhoto = async (file?: File | null) => {
+    if (!file) {
+      return;
+    }
+    try {
+      setPhotoUploading(true);
+      const csrf = await fetchCsrfToken();
+      const formData = new FormData();
+      formData.append("file", file);
+      formData.append("folder", "profiles");
+      const { data: upload } = await api.post("/media/upload", formData, {
+        headers: {
+          "Content-Type": "multipart/form-data",
+          "x-csrf-token": csrf
+        }
+      });
+
+      await api.post(
+        "/profile/photo",
+        {
+          mediaUrl: upload.url,
+          makePrimary: true
+        },
+        { headers: { "x-csrf-token": csrf } }
+      );
+
+      const refreshed = await api.get("/profile/me");
+      setProfile(refreshed.data);
+      setStatus("Photo de profil mise a jour.");
+    } catch (error: any) {
+      setStatus(error?.response?.data?.message ?? "Impossible de mettre a jour la photo profil.");
+    } finally {
+      setPhotoUploading(false);
+    }
+  };
+
   const verificationStatus = profile?.verificationStatus ?? (profile?.verifiedBadge ? "verified" : "unverified");
 
   const addInterest = () => {
@@ -131,6 +168,9 @@ export default function ProfilePage() {
               <div>
                 <p className="text-sm text-slate-300">Edition du profil</p>
                 <h3 className="font-heading text-2xl text-white">{profile?.displayName ?? "Utilisateur"}</h3>
+                <p className="text-xs text-slate-400 mt-1">
+                  {profile?.followersCount ?? 0} abonnes • {profile?.followingCount ?? 0} abonnements
+                </p>
               </div>
               <span className={`rounded-full px-3 py-1 text-xs ${
                 verificationStatus === "verified"
@@ -149,6 +189,21 @@ export default function ProfilePage() {
                       ? "Verification refusee"
                       : "Profil non verifie"}
               </span>
+            </div>
+
+            <div className="mb-4 rounded-2xl border border-white/10 bg-black/20 p-3">
+              <p className="text-sm text-slate-300">Photo de profil</p>
+              <div className="mt-2 flex items-center gap-3">
+                {profile?.user?.photos?.[0]?.url ? (
+                  <img src={profile.user.photos[0].url} alt="Photo profil" className="h-14 w-14 rounded-full object-cover" />
+                ) : (
+                  <div className="h-14 w-14 rounded-full bg-white/10" />
+                )}
+                <label className="cursor-pointer rounded-xl border border-white/20 px-3 py-2 text-xs text-slate-200">
+                  {photoUploading ? "Upload..." : "Changer photo"}
+                  <input type="file" accept="image/jpeg,image/png,image/webp" className="hidden" onChange={(e) => void uploadProfilePhoto(e.target.files?.[0] ?? null)} />
+                </label>
+              </div>
             </div>
 
             <p className="text-sm text-slate-300">Nom</p>

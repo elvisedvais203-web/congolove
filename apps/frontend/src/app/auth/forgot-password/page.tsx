@@ -20,12 +20,9 @@ export default function ForgotPasswordPage() {
     try {
       setLoading(true);
       setStatus("");
-      const { data } = await api.post("/auth/forgot-password", { identifier });
-      if (data?.debugCode) {
-        setCode(String(data.debugCode));
-      }
+      await api.post("/auth/forgot-password", { identifier });
       setStep("code");
-      setStatus(data?.debugCode ? `Code OTP dev: ${data.debugCode}` : "Code OTP envoye sur votre numero.");
+      setStatus("Code OTP envoye sur votre numero ou email.");
     } catch (e: any) {
       setStatus(e?.response?.data?.message ?? "Erreur lors de l envoi du code.");
     } finally {

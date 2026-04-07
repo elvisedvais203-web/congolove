@@ -7,7 +7,18 @@ import { uploadMedia } from "../services/media.service";
 import { ApiError } from "../utils/ApiError";
 
 const router = Router();
-const upload = multer({ dest: "tmp/uploads" });
+const upload = multer({
+  dest: "tmp/uploads",
+  limits: { fileSize: 30 * 1024 * 1024 },
+  fileFilter: (_req, file, cb) => {
+    const allowed = new Set(["image/jpeg", "image/png", "image/webp", "video/mp4", "video/quicktime"]);
+    if (!allowed.has(file.mimetype)) {
+      cb(new ApiError(400, "Format fichier non supporte. Utilisez JPEG, PNG, WEBP ou MP4."));
+      return;
+    }
+    cb(null, true);
+  }
+});
 
 router.post("/upload", authGuard, csrfGuard, upload.single("file"), async (req: AuthRequest, res, next) => {
   const file = req.file;

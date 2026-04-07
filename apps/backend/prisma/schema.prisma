@@ -47,6 +47,43 @@ enum ChatMemberRole {
   ADMIN
 }
 
+enum StoryVisibility {
+  PUBLIC
+  FOLLOWERS
+}
+
+enum AppLanguage {
+  FR
+  SW
+  EN
+}
+
+enum AppTheme {
+  DARK
+  LIGHT
+}
+
+enum ChatTheme {
+  CLASSIC
+  AQUA
+  SUNSET
+}
+
+enum VoiceTranscriptMode {
+  NEVER
+  MANUAL
+}
+
+enum ProfileVisibility {
+  VISIBLE
+  HIDDEN
+}
+
+enum MessagePolicy {
+  ALL
+  MATCH_ONLY
+}
+
 model User {
   id               String        @id @default(uuid())
   email            String?       @unique
@@ -81,6 +118,11 @@ model User {
   chatMessages     ChatMessage[]  @relation("ChatMessageSender")
   chatReceipts     ChatMessageReceipt[]
   chatReactions    ChatReaction[]
+  settings         UserSettings?
+  loginEvents      LoginEvent[]
+  feedPosts        FeedPost[]
+  feedPostLikes    FeedPostLike[]
+  feedPostComments FeedPostComment[]
 }
 
 model Profile {
@@ -93,6 +135,7 @@ model Profile {
   longitude     Float?
   interests     String[]
   verifiedBadge Boolean  @default(false)
+  isPrivate     Boolean   @default(false)
   lastActiveAt  DateTime @default(now())
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
@@ -167,6 +210,7 @@ model Story {
   userId      String
   mediaUrl    String
   mediaType   String
+  visibility  StoryVisibility @default(PUBLIC)
   caption     String?
   expiresAt   DateTime
   createdAt   DateTime @default(now())
@@ -175,6 +219,84 @@ model Story {
   viewers   StoryView[]
 
   @@index([userId, createdAt])
+}
+
+model UserSettings {
+  id                  String              @id @default(uuid())
+  userId              String              @unique
+  language            AppLanguage         @default(FR)
+  theme               AppTheme            @default(DARK)
+  chatTheme           ChatTheme           @default(CLASSIC)
+  chatAnimations      Boolean             @default(true)
+  readReceipts        Boolean             @default(true)
+  autoSaveMedia       Boolean             @default(false)
+  voiceTranscriptMode VoiceTranscriptMode @default(NEVER)
+  profileVisibility   ProfileVisibility   @default(VISIBLE)
+  messagePolicy       MessagePolicy       @default(MATCH_ONLY)
+  hideOnlineStatus    Boolean             @default(false)
+  notifMessages       Boolean             @default(true)
+  notifLikes          Boolean             @default(true)
+  notifCalls          Boolean             @default(true)
+  storyVisibility     StoryVisibility     @default(PUBLIC)
+  createdAt           DateTime            @default(now())
+  updatedAt           DateTime            @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model LoginEvent {
+  id          String   @id @default(uuid())
+  userId      String
+  identifier  String
+  ipAddress   String?
+  userAgent   String?
+  success     Boolean  @default(false)
+  reason      String?
+  createdAt   DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, createdAt])
+}
+
+model FeedPost {
+  id         String            @id @default(uuid())
+  authorId   String
+  content    String
+  mediaUrl   String?
+  createdAt  DateTime          @default(now())
+  updatedAt  DateTime          @updatedAt
+
+  author     User              @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  likes      FeedPostLike[]
+  comments   FeedPostComment[]
+
+  @@index([createdAt])
+}
+
+model FeedPostLike {
+  id        String    @id @default(uuid())
+  postId    String
+  userId    String
+  createdAt DateTime  @default(now())
+
+  post FeedPost @relation(fields: [postId], references: [id], onDelete: Cascade)
+  user User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([postId, userId])
+}
+
+model FeedPostComment {
+  id        String    @id @default(uuid())
+  postId    String
+  userId    String
+  content   String
+  createdAt DateTime  @default(now())
+
+  post FeedPost @relation(fields: [postId], references: [id], onDelete: Cascade)
+  user User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([postId, createdAt])
 }
 
 model StoryView {

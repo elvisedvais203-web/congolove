@@ -4,13 +4,14 @@ import { cleanupExpiredStories, getStoryFeed, publishStory, viewStory } from "..
 
 export async function createStory(req: AuthRequest, res: Response) {
   const userId = req.user!.userId;
-  const { mediaUrl, mediaType, caption } = req.body as {
+  const { mediaUrl, mediaType, caption, visibility } = req.body as {
     mediaUrl: string;
     mediaType: "IMAGE" | "VIDEO";
     caption?: string;
+    visibility?: "PUBLIC" | "FOLLOWERS";
   };
 
-  const story = await publishStory({ userId, mediaUrl, mediaType, caption });
+  const story = await publishStory({ userId, mediaUrl, mediaType, caption, visibility });
   res.status(201).json(story);
 }
 

@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import api from "../../../lib/api";
 import { useRouter } from "next/navigation";
 import { getCountries, getCountryCallingCode } from "libphonenumber-js";
@@ -26,6 +26,7 @@ export default function RegisterPage() {
   const [lookingFor, setLookingFor] = useState<"SERIOUS" | "FUN" | "FRIENDSHIP">("SERIOUS");
   const [step, setStep] = useState<"account" | "profile" | "verify" | "done">("account");
   const [loading, setLoading] = useState(false);
+  const [resendCooldown, setResendCooldown] = useState(0);
   const [status, setStatus] = useState("");
 
   const phone = useMemo(() => `${phonePrefix}${phoneLocal}`.replace(/\s+/g, ""), [phonePrefix, phoneLocal]);
@@ -48,9 +49,7 @@ export default function RegisterPage() {
       const { data } = await api.post("/auth/register", { phone, email, password });
       const identifier = (email.trim() || phone.trim()).toLowerCase();
       setIdentifierForOtp(identifier);
-      if (data?.otp?.debugCode) {
-        setOtpCode(String(data.otp.debugCode));
-      }
+      setResendCooldown(Number(data?.retryAfterSeconds ?? 30));
 
       localStorage.setItem(
         "kl_ai_bootstrap",
@@ -64,13 +63,23 @@ export default function RegisterPage() {
       );
 
       setStep("verify");
-      setStatus(data?.otp?.debugCode ? `Compte cree. OTP dev: ${data.otp.debugCode}` : "Compte cree. Un code OTP vient d'etre envoye. Vos preferences IA sont pretes.");
+      setStatus("Compte cree. Un code OTP vient d'etre envoye. Vos preferences utilisateur sont pretes.");
     } catch (error: any) {
       setStatus(error?.response?.data?.message ?? "Inscription echouee.");
     } finally {
       setLoading(false);
     }
   };
+
+  useEffect(() => {
+    if (resendCooldown <= 0) {
+      return undefined;
+    }
+    const timer = window.setInterval(() => {
+      setResendCooldown((prev) => (prev <= 1 ? 0 : prev - 1));
+    }, 1000);
+    return () => window.clearInterval(timer);
+  }, [resendCooldown]);
 
   const verifyIdentity = async () => {
     try {
@@ -89,11 +98,9 @@ export default function RegisterPage() {
   const resendOtp = async () => {
     try {
       setLoading(true);
-      const { data } = await api.post("/auth/otp/send", { identifier: identifierForOtp });
-      if (data?.debugCode) {
-        setOtpCode(String(data.debugCode));
-      }
-      setStatus(data?.debugCode ? `Nouveau code OTP dev: ${data.debugCode}` : "Nouveau code OTP envoye.");
+      const { data } = await api.post("/auth/otp/send", { identifier: identifierForOtp, purpose: "VERIFY_ACCOUNT" });
+      setResendCooldown(Number(data?.retryAfterSeconds ?? 30));
+      setStatus("Nouveau code OTP envoye.");
     } catch (error: any) {
       setStatus(error?.response?.data?.message ?? "Impossible de renvoyer le code OTP.");
     } finally {
@@ -155,7 +162,7 @@ export default function RegisterPage() {
 
       {step === "profile" && (
         <div className="mt-6 space-y-3">
-          <p className="text-sm text-slate-300">Personnalisez votre experience comme sur les grandes apps de rencontre.</p>
+          <p className="text-sm text-slate-300">Personnalisez votre experience avec les options de KongoLove.</p>
           <input value={displayName} onChange={(e) => setDisplayName(e.target.value)} className="w-full rounded-xl border border-white/20 bg-black/30 px-4 py-3" placeholder="Pseudo" />
           <input value={city} onChange={(e) => setCity(e.target.value)} className="w-full rounded-xl border border-white/20 bg-black/30 px-4 py-3" placeholder="Ville (Kinshasa, Goma...)" />
 
@@ -220,8 +227,8 @@ export default function RegisterPage() {
           <button onClick={verifyIdentity} disabled={loading} className="w-full rounded-xl bg-neoblue px-4 py-3 font-semibold text-[#041127] disabled:opacity-60">
             {loading ? "Verification..." : "Confirmer mon identite"}
           </button>
-          <button onClick={resendOtp} disabled={loading} className="w-full rounded-xl border border-white/20 bg-black/20 px-4 py-3 font-semibold text-white disabled:opacity-60">
-            Renvoyer le code
+          <button onClick={resendOtp} disabled={loading || resendCooldown > 0} className="w-full rounded-xl border border-white/20 bg-black/20 px-4 py-3 font-semibold text-white disabled:opacity-60">
+            {resendCooldown > 0 ? `Renvoyer le code (${resendCooldown}s)` : "Renvoyer le code"}
           </button>
         </div>
       )}

@@ -9,6 +9,9 @@ export default function AuthPage() {
   const router = useRouter();
   const [identifier, setIdentifier] = useState("");
   const [password, setPassword] = useState("");
+  const [twoFactorCode, setTwoFactorCode] = useState("");
+  const [twoFactorChallengeId, setTwoFactorChallengeId] = useState<string | null>(null);
+  const [twoFactorDestination, setTwoFactorDestination] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [status, setStatus] = useState("");
   const [statusType, setStatusType] = useState<"error" | "success">("error");
@@ -31,6 +34,13 @@ export default function AuthPage() {
     try {
       setLoading(true); setStatus("");
       const { data } = await api.post("/auth/login", { identifier, password });
+      if (data?.requires2fa && data?.challenge?.challengeId) {
+        setStatus(`Code de securite envoye a ${String(data.challenge.destination ?? "votre destination")}.`);
+        setTwoFactorChallengeId(String(data.challenge.challengeId));
+        setTwoFactorDestination(String(data.challenge.destination ?? ""));
+        setStatusType("success");
+        return;
+      }
       localStorage.setItem("accessToken", data.tokens.accessToken);
       localStorage.setItem("refreshToken", data.tokens.refreshToken);
       localStorage.setItem("currentUser", JSON.stringify(data.user));
@@ -40,6 +50,32 @@ export default function AuthPage() {
     } catch (error: any) {
       setStatus(error?.response?.data?.message ?? "Identifiants incorrects."); setStatusType("error");
     } finally { setLoading(false); }
+  };
+
+  const verify2fa = async () => {
+    if (!twoFactorChallengeId || !twoFactorCode.trim()) {
+      setStatus("Entrez le code de verification.");
+      setStatusType("error");
+      return;
+    }
+    try {
+      setLoading(true);
+      const { data } = await api.post("/auth/login/2fa/verify", {
+        challengeId: twoFactorChallengeId,
+        code: twoFactorCode.trim()
+      });
+      localStorage.setItem("accessToken", data.tokens.accessToken);
+      localStorage.setItem("refreshToken", data.tokens.refreshToken);
+      localStorage.setItem("currentUser", JSON.stringify(data.user));
+      setStatus("Connexion securisee reussie.");
+      setStatusType("success");
+      router.push("/dashboard");
+    } catch (error: any) {
+      setStatus(error?.response?.data?.message ?? "Verification 2FA invalide.");
+      setStatusType("error");
+    } finally {
+      setLoading(false);
+    }
   };
 
   const socialLogin = async (provider: "google" | "apple") => {
@@ -119,6 +155,7 @@ export default function AuthPage() {
               </div>
             </div>
 
+            {!twoFactorChallengeId ? (
             <button onClick={() => void submit()} disabled={loading}
               className="btn-neon w-full rounded-2xl py-3.5 text-sm font-bold tracking-wide">
               {loading ? (
@@ -131,6 +168,35 @@ export default function AuthPage() {
                 </span>
               ) : "Se connecter"}
             </button>
+            ) : (
+              <div className="space-y-3 rounded-2xl border border-neoblue/30 bg-neoblue/5 p-3">
+                <p className="text-xs text-slate-300">Verification 2FA active. Code envoye a {twoFactorDestination || "votre destination"}.</p>
+                <input
+                  value={twoFactorCode}
+                  onChange={(e) => setTwoFactorCode(e.target.value.replace(/\D/g, "").slice(0, 6))}
+                  className="input-neon w-full rounded-2xl px-4 py-3 text-sm"
+                  placeholder="Code 6 chiffres"
+                  inputMode="numeric"
+                />
+                <div className="grid grid-cols-2 gap-2">
+                  <button onClick={() => void verify2fa()} disabled={loading} className="btn-neon rounded-2xl py-3 text-sm font-bold">
+                    Valider code
+                  </button>
+                  <button
+                    onClick={() => {
+                      setTwoFactorChallengeId(null);
+                      setTwoFactorCode("");
+                      setTwoFactorDestination("");
+                      setStatus("Verification annulee.");
+                      setStatusType("error");
+                    }}
+                    className="btn-outline-neon rounded-2xl py-3 text-sm font-semibold"
+                  >
+                    Annuler
+                  </button>
+                </div>
+              </div>
+            )}
 
             {status && (
               <div className={`rounded-xl px-4 py-3 text-sm font-medium ${statusType === "success"

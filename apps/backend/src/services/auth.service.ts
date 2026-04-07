@@ -6,6 +6,11 @@ import { env } from "../config/env";
 import { ApiError } from "../utils/ApiError";
 import { normalizeInternationalPhone } from "../utils/phone";
 import { getAccountRestriction } from "./account-restriction.service";
+import { redis } from "../config/redis";
+import { sendOtp, verifyOtp } from "./otp.service";
+
+const LOGIN_2FA_PREFIX = "auth:2fa:";
+const LOGIN_2FA_TTL_SECONDS = 300;
 
 interface RegisterInput {
   email?: string;
@@ -81,6 +86,9 @@ export async function registerUser(input: RegisterInput) {
           displayName: `User ${phone.slice(-4)}`,
           interests: []
         }
+      },
+      settings: {
+        create: {}
       }
     }
   });
@@ -118,6 +126,9 @@ export async function loginOrRegisterWithSocial(input: { provider?: "google" | "
             displayName: String(input.displayName ?? normalizedEmail.split("@")[0]).slice(0, 60) || `${provider}-user`,
             interests: []
           }
+        },
+        settings: {
+          create: {}
         }
       }
     });
@@ -137,7 +148,26 @@ export async function loginOrRegisterWithSocial(input: { provider?: "google" | "
   };
 }
 
-export async function loginUser(input: LoginInput) {
+async function createLoginChallenge(userId: string, identifier: string) {
+  const challengeId = crypto.randomUUID();
+  const payload = JSON.stringify({ userId, identifier });
+
+  try {
+    await redis.setex(`${LOGIN_2FA_PREFIX}${challengeId}`, LOGIN_2FA_TTL_SECONDS, payload);
+  } catch {
+    throw new ApiError(503, "Service de verification indisponible. Reessayez.");
+  }
+
+  const otp = await sendOtp(identifier, { purpose: "LOGIN_2FA" });
+  return {
+    challengeId,
+    destination: otp.destination,
+    expiresInSeconds: otp.expiresInSeconds,
+    retryAfterSeconds: otp.retryAfterSeconds
+  };
+}
+
+export async function loginUser(input: LoginInput, meta?: { ipAddress?: string; userAgent?: string }) {
   const identifier = resolveLoginIdentifier(input);
   const user =
     identifier.type === "email"
@@ -161,8 +191,80 @@ export async function loginUser(input: LoginInput) {
 
   const ok = await bcrypt.compare(input.password, user.passwordHash);
   if (!ok) {
+    await prisma.loginEvent.create({
+      data: {
+        userId: user.id,
+        identifier: identifier.value,
+        ipAddress: meta?.ipAddress,
+        userAgent: meta?.userAgent,
+        success: false,
+        reason: "INVALID_PASSWORD"
+      }
+    });
     throw new ApiError(401, "Identifiants invalides");
   }
+
+  const challenge = await createLoginChallenge(user.id, identifier.value);
+
+  await prisma.loginEvent.create({
+    data: {
+      userId: user.id,
+      identifier: identifier.value,
+      ipAddress: meta?.ipAddress,
+      userAgent: meta?.userAgent,
+      success: false,
+      reason: "PENDING_2FA"
+    }
+  });
+
+  return {
+    user,
+    requires2fa: true,
+    challenge
+  };
+}
+
+export async function verifyLoginTwoFactor(input: { challengeId: string; code: string }, meta?: { ipAddress?: string; userAgent?: string }) {
+  const challengeId = String(input.challengeId ?? "").trim();
+  const code = String(input.code ?? "").trim();
+  if (!challengeId || !code) {
+    throw new ApiError(400, "Code et challenge requis");
+  }
+
+  let payloadRaw: string | null = null;
+  try {
+    payloadRaw = await redis.get(`${LOGIN_2FA_PREFIX}${challengeId}`);
+  } catch {
+    throw new ApiError(503, "Service de verification indisponible");
+  }
+
+  if (!payloadRaw) {
+    throw new ApiError(400, "Challenge expire ou invalide");
+  }
+
+  const payload = JSON.parse(payloadRaw) as { userId: string; identifier: string };
+  const validOtp = await verifyOtp(payload.identifier, code);
+  if (!validOtp) {
+    throw new ApiError(400, "Code OTP invalide ou expire");
+  }
+
+  await redis.del(`${LOGIN_2FA_PREFIX}${challengeId}`);
+
+  const user = await prisma.user.findUnique({ where: { id: payload.userId } });
+  if (!user) {
+    throw new ApiError(404, "Compte introuvable");
+  }
+
+  await prisma.loginEvent.create({
+    data: {
+      userId: user.id,
+      identifier: payload.identifier,
+      ipAddress: meta?.ipAddress,
+      userAgent: meta?.userAgent,
+      success: true,
+      reason: "LOGIN_2FA_OK"
+    }
+  });
 
   return {
     user,

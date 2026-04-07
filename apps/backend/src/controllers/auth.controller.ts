@@ -1,5 +1,5 @@
 import { Request, Response } from "express";
-import { confirmUserIdentity, loginOrRegisterWithSocial, loginUser, refreshTokens, registerUser, resetPassword } from "../services/auth.service";
+import { confirmUserIdentity, loginOrRegisterWithSocial, loginUser, refreshTokens, registerUser, resetPassword, verifyLoginTwoFactor } from "../services/auth.service";
 import { buildOAuthErrorRedirect, completeAppleOAuth, completeGoogleOAuth, getAppleOAuthStartUrl, getGoogleOAuthStartUrl } from "../services/oauth.service";
 import { sendOtp, verifyOtp } from "../services/otp.service";
 import { normalizeInternationalPhone } from "../utils/phone";
@@ -17,23 +17,40 @@ function resolveIdentifier(payload: { phone?: string; email?: string; identifier
 export async function register(req: Request, res: Response) {
   const { user } = await registerUser(req.body);
   const identifier = user.email ?? user.phone;
-  const otp = await sendOtp(identifier);
+  const otp = await sendOtp(identifier, { purpose: "VERIFY_ACCOUNT" });
 
   res.status(201).json({
     user,
     verificationRequired: true,
-    otp
+    retryAfterSeconds: otp.retryAfterSeconds
   });
 }
 
 export async function login(req: Request, res: Response) {
-  const data = await loginUser(req.body);
+  const data = await loginUser(req.body, {
+    ipAddress: req.ip,
+    userAgent: req.get("user-agent") ?? undefined
+  });
+  res.json(data);
+}
+
+export async function verifyLogin2fa(req: Request, res: Response) {
+  const { challengeId, code } = req.body as { challengeId: string; code: string };
+  const data = await verifyLoginTwoFactor(
+    { challengeId, code },
+    {
+      ipAddress: req.ip,
+      userAgent: req.get("user-agent") ?? undefined
+    }
+  );
   res.json(data);
 }
 
 export async function sendPhoneOtp(req: Request, res: Response) {
   const identifier = resolveIdentifier(req.body as { phone?: string; email?: string; identifier?: string });
-  const result = await sendOtp(identifier);
+  const purposeRaw = String(req.body?.purpose ?? "VERIFY_ACCOUNT").toUpperCase();
+  const purpose = purposeRaw === "RESET_PASSWORD" ? "RESET_PASSWORD" : purposeRaw === "LOGIN_2FA" ? "LOGIN_2FA" : "VERIFY_ACCOUNT";
+  const result = await sendOtp(identifier, { purpose });
   res.json(result);
 }
 
@@ -52,7 +69,7 @@ export async function verifyPhoneOtp(req: Request, res: Response) {
 
 export async function forgotPassword(req: Request, res: Response) {
   const identifier = resolveIdentifier(req.body as { phone?: string; email?: string; identifier?: string });
-  const result = await sendOtp(identifier);
+  const result = await sendOtp(identifier, { purpose: "RESET_PASSWORD" });
   res.json(result);
 }
 

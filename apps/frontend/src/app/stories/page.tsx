@@ -35,6 +35,7 @@ export default function StoriesPage() {
   const [progress, setProgress] = useState(0);
   const [paused, setPaused] = useState(false);
   const [caption, setCaption] = useState("");
+  const [storyVisibility, setStoryVisibility] = useState<"PUBLIC" | "FOLLOWERS">("PUBLIC");
   const [publishing, setPublishing] = useState(false);
   const [publishStatus, setPublishStatus] = useState("");
   const fileRef = useRef<HTMLInputElement>(null);
@@ -127,16 +128,25 @@ export default function StoriesPage() {
     try {
       setPublishing(true);
       setPublishStatus("Envoi en cours...");
+      if (!["image/jpeg", "image/png", "image/webp", "video/mp4", "video/quicktime"].includes(file.type)) {
+        setPublishStatus("Format non supporte. Utilisez JPEG, PNG, WEBP ou MP4.");
+        return;
+      }
       const formData = new FormData();
       formData.append("file", file);
-      const { data: upload } = await api.post("/media/upload", formData, {
-        headers: { "Content-Type": "multipart/form-data" },
-      });
+      formData.append("folder", "stories");
       const csrf = await fetchCsrfToken();
+      const { data: upload } = await api.post("/media/upload", formData, {
+        headers: {
+          "Content-Type": "multipart/form-data",
+          "x-csrf-token": csrf
+        },
+      });
       await createStory({
         mediaUrl: upload.url ?? upload.secure_url ?? upload.mediaUrl,
         mediaType: file.type.startsWith("video") ? "VIDEO" : "IMAGE",
         caption,
+        visibility: storyVisibility
       }, csrf);
       setCaption("");
       setPublishStatus("Story publiee !");
@@ -289,6 +299,20 @@ export default function StoriesPage() {
             className="w-full rounded-xl border border-white/20 bg-black/20 px-4 py-2.5 text-sm text-white placeholder:text-slate-500"
             placeholder="Ajoute une legende..."
           />
+          <div className="mt-3 flex gap-2">
+            <button
+              onClick={() => setStoryVisibility("PUBLIC")}
+              className={`rounded-xl px-3 py-1.5 text-xs ${storyVisibility === "PUBLIC" ? "bg-neoblue/25 text-neoblue" : "bg-white/10 text-slate-300"}`}
+            >
+              Story publique
+            </button>
+            <button
+              onClick={() => setStoryVisibility("FOLLOWERS")}
+              className={`rounded-xl px-3 py-1.5 text-xs ${storyVisibility === "FOLLOWERS" ? "bg-neoblue/25 text-neoblue" : "bg-white/10 text-slate-300"}`}
+            >
+              Abonnes uniquement
+            </button>
+          </div>
           <p className="mt-2 text-xs text-slate-500">Choisis une photo/video ci-dessus pour publier avec cette legende.</p>
         </div>
 
