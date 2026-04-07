@@ -120,9 +120,10 @@ model User {
   chatReactions    ChatReaction[]
   settings         UserSettings?
   loginEvents      LoginEvent[]
-  feedPosts        FeedPost[]
-  feedPostLikes    FeedPostLike[]
-  feedPostComments FeedPostComment[]
+  firebaseUid      String?           @unique
+  feedPosts        FeedPost[]        @relation("UserFeedPosts")
+  feedPostLikes    FeedPostLike[]    @relation("UserFeedPostLikes")
+  feedPostComments FeedPostComment[] @relation("UserFeedPostComments")
 }
 
 model Profile {
@@ -267,7 +268,7 @@ model FeedPost {
   createdAt  DateTime          @default(now())
   updatedAt  DateTime          @updatedAt
 
-  author     User              @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  author     User              @relation("UserFeedPosts", fields: [authorId], references: [id], onDelete: Cascade)
   likes      FeedPostLike[]
   comments   FeedPostComment[]
 
@@ -278,10 +279,9 @@ model FeedPostLike {
   id        String    @id @default(uuid())
   postId    String
   userId    String
-  createdAt DateTime  @default(now())
 
   post FeedPost @relation(fields: [postId], references: [id], onDelete: Cascade)
-  user User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user User     @relation("UserFeedPostLikes", fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([postId, userId])
 }
@@ -294,7 +294,7 @@ model FeedPostComment {
   createdAt DateTime  @default(now())
 
   post FeedPost @relation(fields: [postId], references: [id], onDelete: Cascade)
-  user User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user User     @relation("UserFeedPostComments", fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([postId, createdAt])
 }
