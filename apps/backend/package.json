@@ -10,6 +10,7 @@
     "test:security:smoke": "tsx src/scripts/security-smoke.ts",
     "prisma:generate": "prisma generate",
     "prisma:migrate": "prisma migrate deploy",
+    "prisma:push": "prisma db push --accept-data-loss",
     "seed": "tsx prisma/seed.ts"
   },
   "dependencies": {

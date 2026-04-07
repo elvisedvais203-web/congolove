@@ -5,7 +5,7 @@ services:
     plan: starter
     rootDir: .
     buildCommand: npm install && npm run prisma:generate --workspace @kongo-love/backend && npm run build --workspace @kongo-love/backend
-    startCommand: npm run prisma:migrate --workspace @kongo-love/backend && npm run start --workspace @kongo-love/backend
+    startCommand: npm run prisma:push --workspace @kongo-love/backend && npm run start --workspace @kongo-love/backend
     healthCheckPath: /api/health
     envVars:
       - key: NODE_ENV
@@ -29,7 +29,7 @@ services:
       - key: JWT_REFRESH_TTL
         value: 30d
       - key: OTP_PROVIDER
-        value: real
+        value: mock
       - key: OTP_SMS_PROVIDER
         value: twilio
       - key: OTP_EMAIL_PROVIDER

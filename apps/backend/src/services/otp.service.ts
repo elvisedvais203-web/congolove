@@ -201,6 +201,10 @@ async function deliverOtp(identifier: string, code: string): Promise<void> {
   const { text, subject, html } = buildOtpMessage(code);
   const provider = env.otpProvider.toLowerCase();
 
+  if (provider === "mock") {
+    return;
+  }
+
   if (provider !== "real") {
     throw new Error("OTP_PROVIDER invalide. Utilisez OTP_PROVIDER=real avec un provider SMS/email configure.");
   }
@@ -232,6 +236,7 @@ async function deliverOtp(identifier: string, code: string): Promise<void> {
 
 export async function sendOtp(identifier: string): Promise<{ sent: boolean; expiresInSeconds: number; destination: string; debugCode?: string }> {
   const code = `${Math.floor(100000 + Math.random() * 900000)}`;
+  const isMockProvider = env.otpProvider.toLowerCase() === "mock";
   await storeOtp(identifier, code);
   let delivered = true;
   try {
@@ -248,7 +253,7 @@ export async function sendOtp(identifier: string): Promise<{ sent: boolean; expi
     sent: true,
     expiresInSeconds: OTP_TTL_SECONDS,
     destination: maskIdentifier(identifier),
-    debugCode: env.nodeEnv === "production" || delivered ? undefined : code
+    debugCode: isMockProvider || (env.nodeEnv !== "production" && !delivered) ? code : undefined
   };
 }
 
