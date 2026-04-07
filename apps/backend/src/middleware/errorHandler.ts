@@ -7,5 +7,11 @@ export function errorHandler(err: Error, _req: Request, res: Response, _next: Ne
     return;
   }
 
-  res.status(500).json({ message: "Erreur interne du serveur" });
+  console.error("[ERROR]", err.message, err.stack);
+
+  const debugErrors = process.env.DEBUG_ERRORS === "true";
+  res.status(500).json({
+    message: "Erreur interne du serveur",
+    ...(debugErrors && { detail: err.message, stack: err.stack })
+  });
 }

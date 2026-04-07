@@ -28,6 +28,8 @@ services:
         value: 15m
       - key: JWT_REFRESH_TTL
         value: 30d
+      - key: DEBUG_ERRORS
+        value: "true"
       - key: OTP_PROVIDER
         value: mock
       - key: OTP_SMS_PROVIDER
