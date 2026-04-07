@@ -3,7 +3,7 @@ import "dotenv/config";
 export const env = {
   nodeEnv: process.env.NODE_ENV ?? "development",
   port: Number(process.env.PORT ?? process.env.API_PORT ?? 4000),
-  corsOrigin: process.env.CORS_ORIGIN ?? "http://localhost:3000",
+  corsOrigin: process.env.CORS_ORIGIN ?? "http://localhost:3000,https://congolove-web.onrender.com",
   databaseUrl: process.env.DATABASE_URL ?? "",
   redisUrl: process.env.REDIS_URL ?? "redis://localhost:6379",
   jwtAccessSecret: process.env.JWT_ACCESS_SECRET ?? "access_secret",

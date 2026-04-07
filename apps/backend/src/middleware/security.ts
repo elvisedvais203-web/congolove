@@ -30,6 +30,11 @@ export const paymentLimiter = rateLimit({
   message: { message: "Limite paiement atteinte, reessayez plus tard" }
 });
 
+const allowedOrigins = env.corsOrigin
+  .split(",")
+  .map((o) => o.trim())
+  .filter(Boolean);
+
 export function applySecurityMiddlewares(app: Express): void {
   app.use(
     helmet({
@@ -39,7 +44,7 @@ export function applySecurityMiddlewares(app: Express): void {
           scriptSrc: ["'self'"],
           styleSrc: ["'self'", "'unsafe-inline'"],
           imgSrc: ["'self'", "data:", "https:"],
-          connectSrc: ["'self'", env.corsOrigin],
+          connectSrc: ["'self'", ...allowedOrigins],
           objectSrc: ["'none'"],
           frameAncestors: ["'none'"]
         }
@@ -47,7 +52,15 @@ export function applySecurityMiddlewares(app: Express): void {
       crossOriginResourcePolicy: { policy: "cross-origin" }
     })
   );
-  app.use(cors({ origin: env.corsOrigin, credentials: true }));
+  app.use(
+    cors({
+      origin: (origin, callback) => {
+        if (!origin || allowedOrigins.includes(origin)) return callback(null, true);
+        callback(new Error(`CORS bloque: ${origin}`));
+      },
+      credentials: true
+    })
+  );
   app.use(cookieParser());
   app.use(express.json({ limit: "10mb" }));
   app.use(express.urlencoded({ extended: true }));
