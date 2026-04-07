@@ -58,6 +58,14 @@ services:
         sync: false
       - key: SUPERADMIN_PASSWORD
         sync: false
+      - key: OAUTH_GOOGLE_CLIENT_ID
+        sync: false
+      - key: OAUTH_GOOGLE_CLIENT_SECRET
+        sync: false
+      - key: OAUTH_GOOGLE_REDIRECT_URI
+        sync: false
+      - key: OAUTH_FRONTEND_SUCCESS_URL
+        sync: false
 
   - type: web
     name: congolove-web
