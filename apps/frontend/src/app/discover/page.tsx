@@ -8,20 +8,6 @@ import { AuthGuard } from "../../components/AuthGuard";
 import { fetchCsrfToken } from "../../services/security";
 import { getCompatibility } from "../../services/ai";
 
-const fallback = [
-  {
-    score: 16,
-    profile: {
-      userId: "fallback-user",
-      displayName: "Merveille",
-      city: "Lubumbashi",
-      bio: "Passionnee de design et voyage",
-      interests: ["design", "voyage"],
-      user: { photos: [{ url: "https://images.unsplash.com/photo-1524504388940-b1c1722653e1" }] }
-    }
-  }
-];
-
 export default function DiscoverPage() {
   const [items, setItems] = useState<any[]>([]);
   const [compatibility, setCompatibility] = useState<{ percent: number; reasons: string[] } | null>(null);
@@ -35,7 +21,7 @@ export default function DiscoverPage() {
     api
       .get("/matching/discover?limit=10")
       .then((res) => setItems(res.data))
-      .catch(() => setItems(fallback));
+      .catch(() => setItems([]));
   }, []);
 
   const top = items[0]?.profile;
@@ -171,7 +157,13 @@ export default function DiscoverPage() {
             {status ? <p className="mt-3 text-center text-sm text-gold">{status}</p> : null}
           </div>
         ) : (
-          <p className="text-slate-300">Aucun profil pour le moment.</p>
+          <div className="flex flex-col items-center justify-center py-20 text-center">
+            <div className="mb-4 flex h-20 w-20 items-center justify-center rounded-full bg-gradient-to-br from-[#ff3cac]/20 to-neoviolet/20 border border-neoviolet/30">
+              <svg viewBox="0 0 24 24" className="h-10 w-10 text-neoviolet" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/></svg>
+            </div>
+            <p className="text-lg font-semibold text-white">Tu as vu tous les profils disponibles</p>
+            <p className="mt-2 text-sm text-slate-400">Reviens plus tard ou ajuste tes filtres pour trouver d&apos;autres personnes.</p>
+          </div>
         )}
       </section>
     </AuthGuard>

@@ -1,25 +1,22 @@
 ﻿"use client";
 
-import { SectionHeader } from "../../components/SectionHeader";
 import Link from "next/link";
-import { StoryBar } from "../../components/StoryBar";
+import { StoryBar, type StoryItem } from "../../components/StoryBar";
 import { AuthGuard } from "../../components/AuthGuard";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import { getAiRecommendations, type AiRecommendations } from "../../services/ai";
+import { getStoryFeed } from "../../services/stories";
+import { getStoredUser } from "../../lib/session";
+import api from "../../lib/api";
 
-const storyItems = [
-  { id: "1", name: "Nadine", avatar: "https://images.unsplash.com/photo-1487412720507-e7ab37603c6f", unread: true },
-  { id: "2", name: "Merveille", avatar: "https://images.unsplash.com/photo-1438761681033-6461ffad8d80", unread: true },
-  { id: "3", name: "Elie", avatar: "https://images.unsplash.com/photo-1500648767791-00dcc994a43e" },
-  { id: "4", name: "Patrick", avatar: "https://images.unsplash.com/photo-1521119989659-a83eee488004" }
-];
+type Stats = { likes: number; matches: number; messages: number; views: number };
 
 const statItems = [
-  { label: "Likes recus", icon: "heart", href: "/likes", color: "pink" },
-  { label: "Matches", icon: "bolt", href: "/matches", color: "violet" },
-  { label: "Messages", icon: "msg", href: "/messages", color: "blue" },
-  { label: "Vues profil", icon: "eye", href: "/profile", color: "gold" }
-];
+  { key: "likes", label: "Likes recus", icon: "heart", href: "/likes", color: "pink" },
+  { key: "matches", label: "Matches", icon: "bolt", href: "/matches", color: "violet" },
+  { key: "messages", label: "Messages", icon: "msg", href: "/messages", color: "blue" },
+  { key: "views", label: "Vues profil", icon: "eye", href: "/profile", color: "gold" },
+] as const;
 
 function StatIcon({ type }: { type: string }) {
   if (type === "heart") return <svg viewBox="0 0 24 24" className="h-5 w-5" fill="currentColor"><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/></svg>;
@@ -28,62 +25,103 @@ function StatIcon({ type }: { type: string }) {
   return <svg viewBox="0 0 24 24" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>;
 }
 
-export default function DashboardPage() {
-  const [likes, setLikes] = useState<Record<string, number>>({ p1: 12, p2: 20 });
-  const [aiData, setAiData] = useState<AiRecommendations | null>(null);
+const colorMap: Record<string, string> = {
+  pink: "text-[#ff3cac] bg-[#ff3cac]/10 border-[#ff3cac]/30",
+  violet: "text-neoviolet bg-neoviolet/10 border-neoviolet/30",
+  blue: "text-neoblue bg-neoblue/10 border-neoblue/30",
+  gold: "text-gold bg-gold/10 border-gold/30",
+};
 
-  const fallbackPosts = [
-    { id: "p1", author: "Nadine", location: "Kinshasa", text: "Soiree rooftop ce weekend, qui est partant ?", image: "https://images.unsplash.com/photo-1511578314322-379afb476865" },
-    { id: "p2", author: "Amani", location: "Goma", text: "Cafe + discussion startup demain matin.", image: "https://images.unsplash.com/photo-1495474472287-4d71bcdd2085" }
-  ];
+export default function DashboardPage() {
+  const [stats, setStats] = useState<Stats>({ likes: 0, matches: 0, messages: 0, views: 0 });
+  const [statsLoading, setStatsLoading] = useState(true);
+  const [storyItems, setStoryItems] = useState<StoryItem[]>([]);
+  const [aiData, setAiData] = useState<AiRecommendations | null>(null);
+  const me = typeof window !== "undefined" ? getStoredUser() : null;
 
   useEffect(() => {
+    // Charger stats reelles
+    Promise.allSettled([
+      api.get("/matching/matches/count").catch(() => ({ data: null })),
+      api.get("/messages/unread-count").catch(() => ({ data: null })),
+      api.get("/social/likes/received").catch(() => ({ data: null })),
+      api.get("/profile/views").catch(() => ({ data: null })),
+    ]).then(([matchesRes, msgsRes, likesRes, viewsRes]) => {
+      const matchesData = matchesRes.status === "fulfilled" ? matchesRes.value : { data: null };
+      const msgsData = msgsRes.status === "fulfilled" ? msgsRes.value : { data: null };
+      const likesData = likesRes.status === "fulfilled" ? likesRes.value : { data: null };
+      const viewsData = viewsRes.status === "fulfilled" ? viewsRes.value : { data: null };
+
+      setStats({
+        matches: (matchesData as any)?.data?.count ?? (matchesData as any)?.data?.total ?? 0,
+        messages: (msgsData as any)?.data?.count ?? (msgsData as any)?.data?.total ?? 0,
+        likes: (likesData as any)?.data?.count ?? (likesData as any)?.data?.total ?? 0,
+        views: (viewsData as any)?.data?.count ?? (viewsData as any)?.data?.total ?? 0,
+      });
+      setStatsLoading(false);
+    });
+
+    // Charger stories reelles
+    getStoryFeed()
+      .then((data: any[]) => {
+        const items: StoryItem[] = data.map((s) => ({
+          id: s.id,
+          userId: s.user?.id ?? s.userId,
+          name: s.user?.profile?.displayName ?? s.user?.username ?? "Utilisateur",
+          avatar: s.user?.profile?.avatarUrl ?? undefined,
+          mediaUrl: s.mediaUrl,
+          mediaType: s.mediaType ?? "IMAGE",
+          caption: s.caption ?? undefined,
+          expiresAt: s.expiresAt,
+          viewCount: s.viewCount ?? undefined,
+        }));
+        setStoryItems(items);
+      })
+      .catch(() => setStoryItems([]));
+
+    // Recommandations IA
     const bootstrap = localStorage.getItem("kl_ai_bootstrap");
-    if (!bootstrap) return;
-    try {
-      const parsed = JSON.parse(bootstrap);
-      getAiRecommendations(parsed).then(setAiData).catch(() => undefined);
-    } catch { }
+    if (bootstrap) {
+      try {
+        const parsed = JSON.parse(bootstrap);
+        getAiRecommendations(parsed).then(setAiData).catch(() => undefined);
+      } catch { }
+    }
   }, []);
 
-  const posts = useMemo(() => {
-    if (!aiData?.media?.length) return fallbackPosts;
-    return aiData.media.slice(0, 6).map((item, index) => ({
-      id: item.id, author: item.displayName, location: item.city ?? "RDC",
-      text: `Suggestion IA #${index + 1} basee sur votre profil`, image: item.mediaUrl
-    }));
-  }, [aiData]);
-
   const matchOfDay = aiData?.people?.[0] ?? null;
-
-  const statColors: Record<string, string> = {
-    pink: "text-[#ff3cac] bg-[#ff3cac]/10 border-[#ff3cac]/30",
-    violet: "text-neoviolet bg-neoviolet/10 border-neoviolet/30",
-    blue: "text-neoblue bg-neoblue/10 border-neoblue/30",
-    gold: "text-gold bg-gold/10 border-gold/30"
-  };
 
   return (
     <AuthGuard>
       <section className="space-y-6 animate-fade-in">
-        <SectionHeader title="Dashboard" subtitle="Feed intelligent style app de rencontre" />
+        {/* Bienvenue */}
+        <div className="glass rounded-3xl p-5 flex items-center justify-between">
+          <div>
+            <p className="text-xs font-bold uppercase tracking-widest text-slate-400">Bienvenue</p>
+            <h1 className="mt-1 font-heading text-2xl font-bold text-white">{me?.username ?? me?.email?.split("@")[0] ?? "Toi"} 👋</h1>
+          </div>
+          <Link href="/profile" className="btn-neon rounded-2xl px-4 py-2 text-sm font-bold">Mon profil</Link>
+        </div>
 
-        <StoryBar
-          items={aiData?.stories?.length
-            ? aiData.stories.slice(0, 12).map((story) => ({ id: story.id, name: story.displayName, avatar: story.mediaUrl, unread: true }))
-            : storyItems}
-        />
+        {/* Stories reelles */}
+        {storyItems.length > 0 && <StoryBar items={storyItems} />}
 
+        {/* Stats */}
         <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
           {statItems.map((s) => (
-            <Link key={s.label} href={s.href} className={`glass card-hover flex flex-col gap-2 rounded-2xl border p-4 ${statColors[s.color]}`}>
-              <span className={`flex h-9 w-9 items-center justify-center rounded-xl bg-current/10 ${statColors[s.color].split(" ")[0]}`}><StatIcon type={s.icon} /></span>
+            <Link key={s.key} href={s.href} className={`glass card-hover flex flex-col gap-2 rounded-2xl border p-4 ${colorMap[s.color]}`}>
+              <span className={`flex h-9 w-9 items-center justify-center rounded-xl ${colorMap[s.color]}`}><StatIcon type={s.icon} /></span>
               <p className="text-xs text-[var(--muted)]">{s.label}</p>
-              <p className="font-heading text-2xl font-bold text-white">0</p>
+              {statsLoading ? (
+                <div className="h-7 w-10 animate-pulse rounded-lg bg-white/10" />
+              ) : (
+                <p className="font-heading text-2xl font-bold text-white">{stats[s.key]}</p>
+              )}
             </Link>
           ))}
         </div>
 
+        {/* Suggestions IA */}
         {aiData?.people?.length ? (
           <div className="glass neon-border-violet rounded-3xl p-5 animate-slide-up">
             <p className="text-xs font-bold uppercase tracking-[0.18em] neon-text-violet mb-3">Suggestions IA</p>
@@ -114,43 +152,30 @@ export default function DashboardPage() {
           </div>
         ) : null}
 
-        <div className="space-y-4">
-          {posts.map((post) => (
-            <article key={post.id} className="glass card-hover rounded-3xl overflow-hidden neon-border">
-              <div className="relative">
-                <img src={post.image} alt={post.author} className="h-64 w-full object-cover" loading="lazy" />
-                <div className="absolute inset-0 bg-gradient-to-t from-[#06070e] via-transparent to-transparent" />
-                <div className="absolute bottom-0 left-0 right-0 p-4">
-                  <p className="font-heading text-lg font-bold text-white">{post.author}</p>
-                  <p className="text-xs text-slate-400 flex items-center gap-1">
-                    <svg viewBox="0 0 24 24" className="h-3 w-3" fill="currentColor"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5S10.62 6.5 12 6.5s2.5 1.12 2.5 2.5S13.38 11.5 12 11.5z"/></svg>
-                    {post.location}
-                  </p>
-                </div>
-              </div>
-              <div className="p-4">
-                <p className="text-sm text-slate-200">{post.text}</p>
-                <div className="mt-3 flex gap-2">
-                  <button onClick={() => setLikes((prev) => ({ ...prev, [post.id]: (prev[post.id] ?? 0) + 1 }))} className="flex items-center gap-1 rounded-xl bg-[#ff3cac]/10 border border-[#ff3cac]/30 px-3 py-1.5 text-sm text-[#ff3cac] hover:bg-[#ff3cac]/20 transition">
-                    <span>♥</span> {likes[post.id] ?? 0}
-                  </button>
-                  <button className="flex items-center gap-1 rounded-xl bg-neoblue/10 border border-neoblue/30 px-3 py-1.5 text-sm text-neoblue hover:bg-neoblue/20 transition">
-                    <span>◎</span> Commenter
-                  </button>
-                  <button className="flex items-center gap-1 rounded-xl bg-neoviolet/10 border border-neoviolet/30 px-3 py-1.5 text-sm text-neoviolet hover:bg-neoviolet/20 transition">
-                    <span>↑</span> Partager
-                  </button>
-                </div>
-              </div>
-            </article>
-          ))}
+        {/* Acces rapide */}
+        <div>
+          <p className="mb-3 text-xs font-bold uppercase tracking-widest text-slate-500">Acces rapide</p>
+          <div className="grid grid-cols-2 gap-3 md:grid-cols-3 lg:grid-cols-6">
+            {[["Likes", "/likes", "pink"],["Matches", "/matches", "violet"],["Notifs", "/notifications", "blue"],["Reseau", "/network", "gold"],["Stories", "/stories", "pink"],["Aide", "/help", "blue"]].map(([label, href, color]) => (
+              <Link key={label} href={href} className={`glass card-hover rounded-2xl px-4 py-3 text-sm font-medium text-center transition ${color === "pink" ? "hover:neon-text-pink" : color === "violet" ? "hover:neon-text-violet" : color === "gold" ? "hover:neon-text-gold" : "hover:neon-text"}`}>{label}</Link>
+            ))}
+          </div>
         </div>
 
-        <div className="grid grid-cols-2 gap-3 md:grid-cols-3 lg:grid-cols-6">
-          {[["Likes", "/likes", "pink"], ["Matches", "/matches", "violet"], ["Notifs", "/notifications", "blue"], ["Reseau", "/network", "gold"], ["Stories", "/stories", "pink"], ["Aide", "/help", "blue"]].map(([label, href, color]) => (
-            <Link key={label} href={href} className={`glass card-hover rounded-2xl px-4 py-3 text-sm font-medium text-center transition ${color === "pink" ? "hover:neon-text-pink" : color === "violet" ? "hover:neon-text-violet" : color === "gold" ? "hover:neon-text-gold" : "hover:neon-text"}`}>{label}</Link>
-          ))}
-        </div>
+        {/* Etat vide si aucune activite et pas de suggestions IA */}
+        {!aiData && !statsLoading && stats.likes === 0 && stats.matches === 0 && (
+          <div className="glass rounded-3xl p-8 text-center">
+            <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-gradient-to-br from-neoblue/20 to-neoviolet/20 border border-neoviolet/30">
+              <svg viewBox="0 0 24 24" className="h-8 w-8 text-neoviolet" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/></svg>
+            </div>
+            <p className="text-lg font-semibold text-white">Ton aventure commence ici</p>
+            <p className="mt-2 text-sm text-slate-400">Complete ton profil et decouvre des profils compatibles.</p>
+            <div className="mt-4 flex flex-wrap items-center justify-center gap-3">
+              <Link href="/profile" className="btn-neon rounded-2xl px-5 py-2.5 text-sm font-bold">Completer profil</Link>
+              <Link href="/discover" className="glass rounded-2xl px-5 py-2.5 text-sm font-medium text-slate-300 hover:text-white transition">Explorer</Link>
+            </div>
+          </div>
+        )}
       </section>
     </AuthGuard>
   );
