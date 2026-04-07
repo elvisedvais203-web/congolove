@@ -98,7 +98,7 @@ export default function DashboardPage() {
         <div className="glass rounded-3xl p-5 flex items-center justify-between">
           <div>
             <p className="text-xs font-bold uppercase tracking-widest text-slate-400">Bienvenue</p>
-            <h1 className="mt-1 font-heading text-2xl font-bold text-white">{me?.username ?? me?.email?.split("@")[0] ?? "Toi"} 👋</h1>
+            <h1 className="mt-1 font-heading text-2xl font-bold text-white">{me?.email?.split("@")[0] ?? me?.phone ?? "Toi"} 👋</h1>
           </div>
           <Link href="/profile" className="btn-neon rounded-2xl px-4 py-2 text-sm font-bold">Mon profil</Link>
         </div>
