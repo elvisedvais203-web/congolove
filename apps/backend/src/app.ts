@@ -8,6 +8,14 @@ import { auditTrail } from "./middleware/auditTrail";
 export function createApp() {
   const app = express();
 
+  app.get("/", (_req, res) => {
+    res.json({
+      service: "KongoLove API",
+      ok: true,
+      health: "/api/health"
+    });
+  });
+
   applySecurityMiddlewares(app);
   app.use(auditTrail);
   app.use("/api", routes);
