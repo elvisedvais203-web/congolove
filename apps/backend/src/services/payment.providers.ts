@@ -39,7 +39,20 @@ abstract class BasePaymentProvider implements PaymentProvider {
 
   async pay(payload: PaymentRequest): Promise<PaymentResult> {
     const { url, token } = this.getApiConfig();
-    if (url && token) {
+    if (!url || !token) {
+      if (env.nodeEnv === "production") {
+        throw new Error(`Configuration manquante pour le provider ${this.providerName}`);
+      }
+
+      const isSuccess = payload.phone.length >= 9;
+      return {
+        success: isSuccess,
+        providerTxId: `${this.providerName}_${Date.now()}`,
+        status: isSuccess ? "SUCCESS" : "FAILED"
+      };
+    }
+
+    {
       const response = await fetch(url, {
         method: "POST",
         headers: {
@@ -69,14 +82,6 @@ abstract class BasePaymentProvider implements PaymentProvider {
         status: data.status ?? "PENDING"
       };
     }
-
-    // Sandbox fallback when no real provider API is configured.
-    const isSuccess = payload.phone.length >= 9;
-    return {
-      success: isSuccess,
-      providerTxId: `${this.providerName}_${Date.now()}`,
-      status: isSuccess ? "SUCCESS" : "FAILED"
-    };
   }
 }
 

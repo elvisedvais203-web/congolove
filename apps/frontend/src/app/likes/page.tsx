@@ -50,20 +50,12 @@ export default function LikesPage() {
     }
   };
 
-  const fallbackLikes: LikeRow[] = [
-    { id: "f1", sender: { id: "u1", displayName: "Nadine K.", city: "Kinshasa", verified: true }, createdAt: new Date(Date.now() - 3600000).toISOString() },
-    { id: "f2", sender: { id: "u2", displayName: "Grace M.", city: "Lubumbashi" }, createdAt: new Date(Date.now() - 7200000).toISOString() },
-    { id: "f3", sender: { id: "u3", displayName: "Amani T.", city: "Goma", verified: true }, createdAt: new Date(Date.now() - 86400000).toISOString() },
-  ];
-
-  const displayLikes = likes.length > 0 ? likes : fallbackLikes;
-
   return (
     <AuthGuard>
       <section>
         <SectionHeader
           title="Likes recus"
-          subtitle={isPremium ? `${displayLikes.length} personnes ont aime votre profil` : "Debloquez Premium pour voir qui vous a aime"}
+          subtitle={isPremium ? `${likes.length} personnes ont aime votre profil` : "Debloquez Premium pour voir qui vous a aime"}
           accent="pink"
         />
 
@@ -93,7 +85,7 @@ export default function LikesPage() {
 
         {!loading && (
           <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-            {displayLikes.map((like, idx) => {
+            {likes.map((like, idx) => {
               const blurred = !isPremium && idx >= 1;
               return (
                 <article key={like.id} className={`glass rounded-3xl p-4 neon-border-pink card-hover transition-all ${blurred ? "select-none" : ""}`}>
@@ -139,7 +131,7 @@ export default function LikesPage() {
           </div>
         )}
 
-        {!loading && displayLikes.length === 0 && (
+        {!loading && likes.length === 0 && (
           <div className="glass rounded-3xl p-10 text-center neon-border">
             <p className="text-5xl mb-4">0</p>
             <p className="font-heading text-xl text-white">Aucun like pour l instant</p>
