@@ -4,7 +4,9 @@ import { AuthRequest } from "../middleware/auth";
 import {
   addGroupMember,
   archiveConversation,
+  clearAllConversations,
   createGroupChat,
+  deleteAllConversations,
   deleteChatMessage,
   editChatMessage,
   globalSearch,
@@ -69,6 +71,16 @@ export async function readConversation(req: AuthRequest, res: Response) {
 
 export async function toggleArchiveConversation(req: AuthRequest, res: Response) {
   const data = await archiveConversation(req.user!.userId, String(req.params.chatId), Boolean(req.body.archived));
+  res.json(data);
+}
+
+export async function clearAllUserConversations(req: AuthRequest, res: Response) {
+  const data = await clearAllConversations(req.user!.userId);
+  res.json(data);
+}
+
+export async function deleteAllUserConversations(req: AuthRequest, res: Response) {
+  const data = await deleteAllConversations(req.user!.userId);
   res.json(data);
 }
 

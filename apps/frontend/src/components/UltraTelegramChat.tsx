@@ -27,6 +27,11 @@ import {
 import { getSuggestions } from "../services/social";
 import { getStoredUser, type AppUser } from "../lib/session";
 import { socket } from "../lib/socket";
+import {
+  PREFERENCES_UPDATED_EVENT,
+  getStoredPreferences,
+  type UserPreferences
+} from "../lib/preferences";
 
 type Props = {
   contactId?: string;
@@ -81,6 +86,7 @@ async function fileToDataUrl(file: File) {
 }
 
 export function UltraTelegramChat({ contactId }: Props) {
+  const [preferences, setPreferences] = useState<UserPreferences>(() => getStoredPreferences());
   const router = useRouter();
   const [me, setMe] = useState<AppUser | null>(null);
   const [conversations, setConversations] = useState<Conversation[]>([]);
@@ -110,6 +116,9 @@ export function UltraTelegramChat({ contactId }: Props) {
   const [callNotice, setCallNotice] = useState<string | null>(null);
   const [icebreakerLoading, setIcebreakerLoading] = useState(false);
   const [icebreakers, setIcebreakers] = useState<string[]>([]);
+  const [voiceTranscriptDraftId, setVoiceTranscriptDraftId] = useState<string | null>(null);
+  const [voiceTranscriptDraft, setVoiceTranscriptDraft] = useState("");
+  const [voiceTranscripts, setVoiceTranscripts] = useState<Record<string, string>>({});
 
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const cameraInputRef = useRef<HTMLInputElement | null>(null);
@@ -127,6 +136,8 @@ export function UltraTelegramChat({ contactId }: Props) {
   const pendingOfferRef = useRef<RTCSessionDescriptionInit | null>(null);
 
   const displayedMessages = searchHits ?? messages;
+
+  const smoothBehavior: ScrollBehavior = preferences.chatAnimations ? "smooth" : "auto";
 
   const visibleConversations = useMemo(() => {
     const q = conversationQuery.toLowerCase().trim();
@@ -452,11 +463,25 @@ export function UltraTelegramChat({ contactId }: Props) {
     setShowEmoji(false);
     setShowSticker(false);
     await refreshConversations();
-    requestAnimationFrame(() => messagesEndRef.current?.scrollIntoView({ behavior: "smooth" }));
+    requestAnimationFrame(() => messagesEndRef.current?.scrollIntoView({ behavior: smoothBehavior }));
   };
 
   useEffect(() => {
     setMe(getStoredUser());
+  }, []);
+
+  useEffect(() => {
+    const apply = () => setPreferences(getStoredPreferences());
+    const onUpdated = () => apply();
+
+    apply();
+    window.addEventListener("storage", apply);
+    window.addEventListener(PREFERENCES_UPDATED_EVENT, onUpdated);
+
+    return () => {
+      window.removeEventListener("storage", apply);
+      window.removeEventListener(PREFERENCES_UPDATED_EVENT, onUpdated);
+    };
   }, []);
 
   useEffect(() => {
@@ -505,8 +530,8 @@ export function UltraTelegramChat({ contactId }: Props) {
   }, [activeChatId, messageQuery]);
 
   useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [messages, searchHits]);
+    messagesEndRef.current?.scrollIntoView({ behavior: smoothBehavior });
+  }, [messages, searchHits, smoothBehavior]);
 
   useEffect(() => {
     if (!me?.id) {
@@ -896,11 +921,13 @@ export function UltraTelegramChat({ contactId }: Props) {
                     <p className="mt-1 text-xs text-slate-400">
                       {activeChat.kind === "GROUP"
                         ? activeChat.members.map((member) => member.displayName).join(", ")
-                        : activeChat.online
-                          ? "en ligne maintenant"
-                          : "hors ligne"}
+                        : preferences.hideOnlineStatus
+                          ? "statut masque"
+                          : activeChat.online
+                            ? "en ligne maintenant"
+                            : "hors ligne"}
                     </p>
-                    {typingRemote && <p className="mt-1 text-xs text-neoblue">en train d'ecrire...</p>}
+                    {typingRemote && preferences.chatAnimations && <p className="mt-1 text-xs text-neoblue">en train d'ecrire...</p>}
                     {recordingRemote && <p className="mt-1 text-xs text-amber-300">en train d'enregistrer...</p>}
                   </div>
                   <div className="flex flex-wrap gap-2">
@@ -960,7 +987,7 @@ export function UltraTelegramChat({ contactId }: Props) {
                           <div className="mb-1 flex items-center gap-2 text-[11px] text-slate-400">
                             <span>{mine ? "Vous" : message.sender.displayName}</span>
                             <span>{formatTime(message.createdAt)}</span>
-                            {mine && statusBadge(message.status)}
+                            {mine && preferences.readReceipts && statusBadge(message.status)}
                             {message.editedAt && <span>(modifie)</span>}
                           </div>
 
@@ -984,18 +1011,72 @@ export function UltraTelegramChat({ contactId }: Props) {
                               {message.type === "IMAGE" && message.mediaUrl ? (
                                 <div>
                                   <img src={message.mediaUrl} alt={message.fileName ?? "image"} className="max-h-72 w-full rounded-2xl object-cover" />
+                                  {preferences.autoSaveMedia && (
+                                    <a href={message.mediaUrl} download={message.fileName ?? "media-image"} className="mt-2 inline-flex rounded-full border border-white/20 px-2 py-1 text-[11px] text-slate-200">
+                                      Telecharger
+                                    </a>
+                                  )}
                                   {message.text && <p className="mt-2 text-sm text-slate-100">{message.text}</p>}
                                 </div>
                               ) : null}
                               {message.type === "VIDEO" && message.mediaUrl ? (
                                 <div>
                                   <video src={message.mediaUrl} controls className="max-h-72 w-full rounded-2xl" />
+                                  {preferences.autoSaveMedia && (
+                                    <a href={message.mediaUrl} download={message.fileName ?? "media-video"} className="mt-2 inline-flex rounded-full border border-white/20 px-2 py-1 text-[11px] text-slate-200">
+                                      Telecharger
+                                    </a>
+                                  )}
                                   {message.text && <p className="mt-2 text-sm text-slate-100">{message.text}</p>}
                                 </div>
                               ) : null}
                               {message.type === "VOICE" && message.mediaUrl ? (
                                 <div>
                                   <audio src={message.mediaUrl} controls className="w-full" />
+                                  {preferences.voiceTranscriptMode === "MANUAL" && (
+                                    <div className="mt-2">
+                                      {voiceTranscriptDraftId === message.id ? (
+                                        <div className="flex gap-2">
+                                          <input
+                                            aria-label="Transcription manuelle"
+                                            value={voiceTranscriptDraft}
+                                            onChange={(event) => setVoiceTranscriptDraft(event.target.value)}
+                                            className="flex-1 rounded-xl border border-white/10 bg-black/30 px-3 py-2 text-xs outline-none"
+                                            placeholder="Saisir la transcription"
+                                          />
+                                          <button
+                                            onClick={() => {
+                                              const cleaned = voiceTranscriptDraft.trim();
+                                              if (cleaned) {
+                                                setVoiceTranscripts((prev) => ({ ...prev, [message.id]: cleaned }));
+                                              }
+                                              setVoiceTranscriptDraftId(null);
+                                              setVoiceTranscriptDraft("");
+                                            }}
+                                            className="rounded-xl bg-neoblue px-2 py-2 text-xs font-semibold text-[#061025]"
+                                          >
+                                            OK
+                                          </button>
+                                        </div>
+                                      ) : (
+                                        <button
+                                          onClick={() => {
+                                            setVoiceTranscriptDraftId(message.id);
+                                            setVoiceTranscriptDraft(voiceTranscripts[message.id] ?? "");
+                                          }}
+                                          className="rounded-full border border-white/20 px-2 py-1 text-[11px] text-slate-200"
+                                        >
+                                          Transcrire
+                                        </button>
+                                      )}
+                                      {voiceTranscripts[message.id] && <p className="mt-2 text-xs text-slate-200">{voiceTranscripts[message.id]}</p>}
+                                    </div>
+                                  )}
+                                  {preferences.autoSaveMedia && (
+                                    <a href={message.mediaUrl} download={message.fileName ?? "media-audio"} className="mt-2 inline-flex rounded-full border border-white/20 px-2 py-1 text-[11px] text-slate-200">
+                                      Telecharger
+                                    </a>
+                                  )}
                                   {message.text && <p className="mt-2 text-sm text-slate-100">{message.text}</p>}
                                 </div>
                               ) : null}

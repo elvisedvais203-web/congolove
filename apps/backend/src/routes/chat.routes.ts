@@ -4,7 +4,9 @@ import { csrfGuard } from "../middleware/csrf";
 import { messageLimiter } from "../middleware/security";
 import {
   addMember,
+  clearAllUserConversations,
   createGroup,
+  deleteAllUserConversations,
   getChatMessages,
   getConversations,
   getGroups,
@@ -25,6 +27,8 @@ router.get("/groups", authGuard, getGroups);
 router.post("/groups", authGuard, csrfGuard, createGroup);
 router.post("/groups/:chatId/members", authGuard, csrfGuard, addMember);
 router.delete("/groups/:chatId/members/:memberId", authGuard, csrfGuard, removeMember);
+router.post("/maintenance/clear-all", authGuard, csrfGuard, clearAllUserConversations);
+router.delete("/maintenance/delete-all", authGuard, csrfGuard, deleteAllUserConversations);
 router.get("/:chatId/messages", authGuard, getChatMessages);
 router.get("/:chatId/search", authGuard, searchChatMessages);
 router.post("/:chatId/messages", authGuard, csrfGuard, messageLimiter, postChatMessage);

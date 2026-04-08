@@ -7,6 +7,7 @@ import { DesktopNav } from "../components/DesktopNav";
 import { SiteFooter } from "../components/SiteFooter";
 import { GlobalSearchBar } from "../components/GlobalSearchBar";
 import { AiDatingCoach } from "../components/AiDatingCoach";
+import { UserPreferencesBoot } from "../components/UserPreferencesBoot";
 
 export const metadata: Metadata = {
   title: "KongoLove",
@@ -25,6 +26,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       <body>
         <DesktopNav />
         <main className="min-h-screen w-full pb-24 md:pb-8 md:pl-72">
+          <UserPreferencesBoot />
           <div className="mx-auto w-full max-w-5xl px-4 pt-6 md:px-8 md:pt-8">
             <div className="mb-4 flex justify-center md:hidden">
               <Link href="/" className="inline-flex items-center gap-2 rounded-2xl border border-white/10 bg-[#0b1124b3] px-3 py-2" aria-label="KongoLove accueil">

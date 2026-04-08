@@ -15,10 +15,47 @@ import aiRoutes from "./ai.routes";
 import mediaRoutes from "./media.routes";
 import notificationsRoutes from "./notifications.routes";
 import paymentWebhookRoutes from "./payment-webhook.routes";
+import { prisma } from "../config/db";
+import { redis } from "../config/redis";
 
 const router = Router();
 
-router.get("/health", (_req, res) => res.json({ ok: true }));
+router.get("/health", (_req, res) => {
+	res.json({
+		ok: true,
+		service: "kongo-love-backend",
+		uptimeSec: Math.round(process.uptime()),
+		timestamp: new Date().toISOString()
+	});
+});
+
+router.get("/ready", async (_req, res) => {
+	const checks = {
+		database: false,
+		redis: false
+	};
+
+	try {
+		await prisma.$queryRaw`SELECT 1`;
+		checks.database = true;
+	} catch {
+		checks.database = false;
+	}
+
+	try {
+		const pong = await redis.ping();
+		checks.redis = pong === "PONG";
+	} catch {
+		checks.redis = false;
+	}
+
+	const ok = checks.database;
+	res.status(ok ? 200 : 503).json({
+		ok,
+		checks,
+		timestamp: new Date().toISOString()
+	});
+});
 router.use("/auth", authRoutes);
 router.use("/matching", matchingRoutes);
 router.use("/messages", messageRoutes);

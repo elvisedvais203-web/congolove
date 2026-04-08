@@ -24,8 +24,8 @@ export default function HomePage() {
             KongoLove combine matching intelligent, chat temps reel, verification identite et securite anti-fake pour des relations serieuses et locales.
           </p>
           <div className="mt-8 flex flex-wrap gap-3">
-            <Link href="/auth/register" className="rounded-2xl bg-neoblue px-5 py-3 font-semibold text-[#041127]">
-              S'inscrire
+            <Link href="/auth" className="rounded-2xl bg-neoblue px-5 py-3 font-semibold text-[#041127]">
+              Commencer
             </Link>
             <Link href="/auth" className="rounded-2xl border border-white/20 px-5 py-3 text-white">
               Se connecter
@@ -93,7 +93,7 @@ export default function HomePage() {
       <div className="rounded-3xl border border-white/10 bg-gradient-to-r from-[#0d1730] via-[#111a35] to-[#0f1f3d] p-6">
         <h2 className="font-heading text-2xl text-white">Vision produit</h2>
         <p className="mt-2 max-w-3xl text-sm text-slate-200">
-          Un melange intelligent de Tinder + WhatsApp + Facebook + IA, adapte aux usages locaux: simple, rapide, securise, localise RDC.
+          Une plateforme de rencontre intelligente adaptee aux usages locaux: simple, rapide, securisee et localisee RDC.
         </p>
         <div className="mt-4 flex flex-wrap gap-3">
           <Link href="/discover" className="rounded-xl bg-neoblue px-4 py-2 font-semibold text-[#041127]">

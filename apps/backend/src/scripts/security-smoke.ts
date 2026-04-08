@@ -10,10 +10,10 @@ import "dotenv/config";
 
 const apiUrl = process.env.API_BASE_URL ?? "http://localhost:4000";
 const phone = process.env.SMOKE_PHONE;
-const password = process.env.SMOKE_PASSWORD;
+const firebaseIdToken = process.env.SMOKE_FIREBASE_ID_TOKEN;
 
-if (!phone || !password) {
-  throw new Error("SMOKE_PHONE et SMOKE_PASSWORD sont obligatoires.");
+if (!phone || !firebaseIdToken) {
+  throw new Error("SMOKE_PHONE et SMOKE_FIREBASE_ID_TOKEN sont obligatoires.");
 }
 
 async function request(path: string, init?: RequestInit) {
@@ -35,10 +35,10 @@ async function main() {
     throw new Error(`Health KO: ${health.status}`);
   }
 
-  console.log("[smoke] Login...");
-  const login = await request("/auth/login", {
+  console.log("[smoke] Firebase verify...");
+  const login = await request("/auth/firebase/verify", {
     method: "POST",
-    body: JSON.stringify({ phone, password })
+    body: JSON.stringify({ idToken: firebaseIdToken })
   });
   if (!login.ok) {
     throw new Error(`Login KO: ${login.status}`);

@@ -436,6 +436,119 @@ export async function archiveConversation(userId: string, chatId: string, archiv
   return getConversation(userId, chatId);
 }
 
+export async function clearAllConversations(userId: string) {
+  const memberships = await prisma.chatMember.findMany({
+    where: { userId },
+    select: { chatId: true }
+  });
+  const chatIds = memberships.map((item) => item.chatId);
+
+  if (chatIds.length === 0) {
+    return { ok: true, chats: 0, messagesCleared: 0, archived: 0 };
+  }
+
+  const now = new Date();
+  const [messagesCleared, archived] = await prisma.$transaction([
+    prisma.chatMessage.updateMany({
+      where: {
+        chatId: { in: chatIds },
+        senderId: userId,
+        deletedAt: null
+      },
+      data: {
+        text: null,
+        mediaUrl: null,
+        fileName: null,
+        durationSec: null,
+        deletedAt: now,
+        editedAt: now
+      }
+    }),
+    prisma.chatMember.updateMany({
+      where: { userId, chatId: { in: chatIds } },
+      data: { archivedAt: now, lastReadAt: now }
+    })
+  ]);
+
+  return {
+    ok: true,
+    chats: chatIds.length,
+    messagesCleared: messagesCleared.count,
+    archived: archived.count
+  };
+}
+
+export async function deleteAllConversations(userId: string) {
+  const memberships = await prisma.chatMember.findMany({
+    where: { userId },
+    select: { chatId: true }
+  });
+  const chatIds = memberships.map((item) => item.chatId);
+
+  if (chatIds.length === 0) {
+    return { ok: true, chatsRemoved: 0, membershipsRemoved: 0, reactionsRemoved: 0, orphanChatsRemoved: 0 };
+  }
+
+  const now = new Date();
+
+  const result = await prisma.$transaction(async (tx) => {
+    await tx.chatMessage.updateMany({
+      where: {
+        chatId: { in: chatIds },
+        senderId: userId,
+        deletedAt: null
+      },
+      data: {
+        text: null,
+        mediaUrl: null,
+        fileName: null,
+        durationSec: null,
+        deletedAt: now,
+        editedAt: now
+      }
+    });
+
+    const reactionsRemoved = await tx.chatReaction.deleteMany({
+      where: {
+        userId,
+        message: {
+          chatId: { in: chatIds }
+        }
+      }
+    });
+
+    const membershipsRemoved = await tx.chatMember.deleteMany({
+      where: { userId, chatId: { in: chatIds } }
+    });
+
+    const orphanChats = await tx.chat.findMany({
+      where: {
+        id: { in: chatIds },
+        members: { none: {} }
+      },
+      select: { id: true }
+    });
+
+    const orphanChatsRemoved = orphanChats.length
+      ? await tx.chat.deleteMany({ where: { id: { in: orphanChats.map((item) => item.id) } } })
+      : { count: 0 };
+
+    return {
+      membershipsRemoved: membershipsRemoved.count,
+      reactionsRemoved: reactionsRemoved.count,
+      orphanChatsRemoved: orphanChatsRemoved.count
+    };
+  });
+
+  return {
+    ok: true,
+    chatsRemoved: chatIds.length,
+    membershipsRemoved: result.membershipsRemoved,
+    reactionsRemoved: result.reactionsRemoved,
+    orphanChatsRemoved: result.orphanChatsRemoved
+  };
+}
+
 export async function editChatMessage(userId: string, messageId: string, text: string) {
   const existing = await prisma.chatMessage.findUnique({ where: { id: messageId } });
   if (!existing || existing.senderId !== userId) {

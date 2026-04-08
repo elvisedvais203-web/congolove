@@ -4,14 +4,14 @@ import { useState } from "react";
 import { SectionHeader } from "../../components/SectionHeader";
 
 const faqs = [
-  { q: "Comment verifier mon profil ?", a: "Ajoutez des photos claires, verifiez votre numero via OTP et completez au moins 80% de votre profil. Le badge Verifie augmente vos chances de match de 3x." },
+  { q: "Comment verifier mon profil ?", a: "Ajoutez des photos claires, verifiez votre numero via Firebase SMS et completez au moins 80% de votre profil. Le badge Verifie augmente vos chances de match de 3x." },
   { q: "Comment activer le mode economie data ?", a: "Rendez-vous dans Reglages > Accessibilite > Mode economie data. Les images seront compressees et les videos pausees automatiquement." },
   { q: "Que faire si je recois des messages inappropries ?", a: "Appuyez longuement sur le message, puis selectionnez Signaler. Notre equipe moderera sous 24h. Vous pouvez aussi bloquer l utilisateur depuis son profil." },
   { q: "Comment payer avec Mobile Money ?", a: "Dans Premium, choisissez votre operateur (Airtel, Orange, M-Pesa...), entrez votre numero et confirmez. Un code vous sera envoye par SMS." },
   { q: "Peut-on utiliser KongoLove hors de la RDC ?", a: "Oui. Meme en diaspora, vous pouvez mettre votre ville d origine en RDC ou utiliser la localisation manuelle. Les paiements internationaux seront disponibles prochainement." },
   { q: "Comment supprimer mon compte ?", a: "Reglages > Confidentialite > Supprimer le compte. Toutes vos donnees seront supprimees sous 30 jours conformement au RGPD." },
   { q: "Mon match a disparu, pourquoi ?", a: "Si un match disparait, l une des deux personnes a peut-etre annule le like ou ete suspendue. Un email de notification vous sera envoye." },
-  { q: "Y a-t-il une verification des identites ?", a: "Oui, nous utilisons la verification OTP par numero congolais et un processus de verification photo pour les profils Premium." },
+  { q: "Y a-t-il une verification des identites ?", a: "Oui, nous utilisons la verification Firebase SMS par numero congolais et un processus de verification photo pour les profils Premium." },
 ];
 
 export default function HelpPage() {

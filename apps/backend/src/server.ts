@@ -4,6 +4,8 @@ import { env } from "./config/env";
 import { createApp } from "./app";
 import { registerChatSocket } from "./sockets/chat.socket";
 import { logger } from "./utils/logger";
+import { prisma } from "./config/db";
+import { redis } from "./config/redis";
 
 const app = createApp();
 const httpServer = createServer(app);
@@ -17,6 +19,55 @@ const io = new Server(httpServer, {
 
 registerChatSocket(io);
 
-httpServer.listen(env.port, () => {
+const server = httpServer.listen(env.port, () => {
   logger.info(`API et Socket.io en cours sur le port ${env.port}`);
+});
+
+let shuttingDown = false;
+
+async function shutdown(signal: string) {
+  if (shuttingDown) {
+    return;
+  }
+  shuttingDown = true;
+  logger.warn(`Arret en cours (${signal})`);
+
+  server.close(async () => {
+    try {
+      io.close();
+      await prisma.$disconnect();
+      redis.disconnect();
+      logger.info("Arret propre termine");
+      process.exit(0);
+    } catch (error) {
+      logger.error("Erreur pendant l'arret", {
+        message: error instanceof Error ? error.message : String(error)
+      });
+      process.exit(1);
+    }
+  });
+
+  setTimeout(() => {
+    logger.error("Arret force apres timeout");
+    process.exit(1);
+  }, 10000).unref();
+}
+
+process.on("SIGINT", () => {
+  void shutdown("SIGINT");
+});
+
+process.on("SIGTERM", () => {
+  void shutdown("SIGTERM");
+});
+
+process.on("unhandledRejection", (reason) => {
+  logger.error("Unhandled rejection", {
+    reason: reason instanceof Error ? reason.message : String(reason)
+  });
+});
+
+process.on("uncaughtException", (error) => {
+  logger.error("Uncaught exception", { message: error.message });
+  void shutdown("uncaughtException");
 });

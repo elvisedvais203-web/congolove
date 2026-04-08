@@ -11,7 +11,7 @@ const pillars = [
   { icon: "V", title: "Vision", accent: "blue", desc: "Creer un espace de rencontres authentiques pour la RDC et la diaspora africaine. Une app pensee pour notre culture, nos valeurs et notre mode de vie." },
   { icon: "F", title: "Fintech locale", accent: "gold", desc: "Paiements Mobile Money natifs (Airtel, Orange, M-Pesa) pour abonnement, boosts et options premium. Aucune carte bancaire requise." },
   { icon: "P", title: "Performance", accent: "violet", desc: "Optimise pour smartphones Android, connexions 3G. Interface legere, rapide, meme en offline partiel." },
-  { icon: "S", title: "Securite", accent: "pink", desc: "Verification OTP, signalements temps reel, moderation IA et chiffrement de bout en bout pour chaque conversation." },
+  { icon: "S", title: "Securite", accent: "pink", desc: "Authentification Firebase par SMS, signalements temps reel, moderation IA et chiffrement de bout en bout pour chaque conversation." },
   { icon: "IA", title: "IA de matching", accent: "blue", desc: "Algorithme de compatibilite base sur les interets, la localisation et les comportements." },
   { icon: "M", title: "Mission", accent: "gold", desc: "Etre la premiere app de rencontre africaine confiante, inclusive et avancee, rayonnant depuis la RDC vers le monde." },
 ];

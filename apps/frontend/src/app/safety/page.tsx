@@ -16,8 +16,8 @@ export default function SafetyPage() {
         <article className="glass card-hover neon-border rounded-3xl p-5">
           <h2 className="font-heading text-lg text-white">Compte et acces</h2>
           <ul className="mt-3 space-y-2 text-sm text-slate-300">
-            <li>Utilisez un mot de passe unique et fort.</li>
-            <li>Activez l OTP par numero RDC.</li>
+            <li>Connectez-vous uniquement via verification SMS Firebase.</li>
+            <li>Verifiez toujours que votre numero est correct (+243...).</li>
             <li>Ne partagez jamais vos codes de verification.</li>
             <li>Activez les notifications de connexion inhabituelle.</li>
           </ul>
@@ -27,7 +27,7 @@ export default function SafetyPage() {
           <ul className="mt-3 space-y-2 text-sm text-slate-300">
             <li>Bloquez immediatement tout profil agressif ou suspect.</li>
             <li>Signalez les contenus offensants en un clic.</li>
-            <li>Evitez de partager votre adresse, mots de passe ou codes OTP.</li>
+            <li>Evitez de partager votre adresse ou vos codes OTP.</li>
             <li>Utilisez l appel audio/video uniquement apres verification mutuelle.</li>
           </ul>
         </article>

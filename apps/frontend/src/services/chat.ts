@@ -186,3 +186,25 @@ export async function pingPresence() {
   const { data } = await api.post<{ ok: boolean; ts: string }>("/presence/ping");
   return data;
 }
+
+export async function clearAllConversations(csrfToken: string) {
+  const { data } = await api.post<{ ok: boolean; chats: number; messagesCleared: number; archived: number }>(
+    "/chats/maintenance/clear-all",
+    {},
+    { headers: { "x-csrf-token": csrfToken } }
+  );
+  return data;
+}
+
+export async function deleteAllConversations(csrfToken: string) {
+  const { data } = await api.delete<{
+    ok: boolean;
+    chatsRemoved: number;
+    membershipsRemoved: number;
+    reactionsRemoved: number;
+    orphanChatsRemoved: number;
+  }>("/chats/maintenance/delete-all", {
+    headers: { "x-csrf-token": csrfToken }
+  });
+  return data;
+}
