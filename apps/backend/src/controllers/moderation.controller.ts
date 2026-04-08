@@ -57,14 +57,30 @@ export async function reportUser(req: AuthRequest, res: Response) {
 }
 
 export async function adminStats(_req: AuthRequest, res: Response) {
-  const [users, matches, messages, reports] = await Promise.all([
+  const [users, matches, messages, reports, paymentsCount, successfulPaymentsCount, successfulPaymentsTotalCdf, activeSubscriptions] = await Promise.all([
     prisma.user.count(),
     prisma.match.count(),
     prisma.message.count(),
-    prisma.userReport.count()
+    prisma.userReport.count(),
+    prisma.payment.count(),
+    prisma.payment.count({ where: { status: "SUCCESS" } }),
+    prisma.payment.aggregate({
+      where: { status: "SUCCESS" },
+      _sum: { amountCdf: true }
+    }),
+    prisma.subscription.count({ where: { active: true } })
   ]);
 
-  res.json({ users, matches, messages, reports });
+  res.json({
+    users,
+    matches,
+    messages,
+    reports,
+    paymentsCount,
+    successfulPaymentsCount,
+    successfulPaymentsTotalCdf: successfulPaymentsTotalCdf._sum.amountCdf ?? 0,
+    activeSubscriptions
+  });
 }
 
 export async function suspiciousUsers(_req: AuthRequest, res: Response) {

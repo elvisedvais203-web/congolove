@@ -28,7 +28,7 @@ export default function AdminPage() {
         <div className="grid gap-4 md:grid-cols-4">
           {[
             { label: "Utilisateurs", value: stats?.users ?? 0 },
-            { label: "Actifs temps reel", value: Math.max(0, Math.round((stats?.users ?? 0) * 0.18)) },
+            { label: "Abonnements actifs", value: stats?.activeSubscriptions ?? 0 },
             { label: "Matches", value: stats?.matches ?? 0 },
             { label: "Messages", value: stats?.messages ?? 0 }
           ].map((item) => (
@@ -42,8 +42,8 @@ export default function AdminPage() {
         <div className="mt-4 grid gap-4 md:grid-cols-3">
           <article className="glass rounded-2xl p-4">
             <p className="text-xs uppercase tracking-[0.16em] text-gold">Revenus</p>
-            <p className="mt-2 font-heading text-3xl text-white">$ {Math.max(0, (stats?.matches ?? 0) * 2)}</p>
-            <p className="text-xs text-slate-400">Estimation journaliere premium/boost</p>
+            <p className="mt-2 font-heading text-3xl text-white">{(stats?.successfulPaymentsTotalCdf ?? 0).toLocaleString("fr-FR")} CDF</p>
+            <p className="text-xs text-slate-400">Total des paiements confirmes</p>
           </article>
           <article className="glass rounded-2xl p-4">
             <p className="text-xs uppercase tracking-[0.16em] text-gold">Signalements</p>
@@ -52,8 +52,8 @@ export default function AdminPage() {
           </article>
           <article className="glass rounded-2xl p-4">
             <p className="text-xs uppercase tracking-[0.16em] text-gold">Transactions</p>
-            <p className="mt-2 font-heading text-3xl text-white">{Math.max(0, Math.round((stats?.matches ?? 0) * 0.45))}</p>
-            <p className="text-xs text-slate-400">Historique paiements (estimation)</p>
+            <p className="mt-2 font-heading text-3xl text-white">{stats?.successfulPaymentsCount ?? 0} / {stats?.paymentsCount ?? 0}</p>
+            <p className="text-xs text-slate-400">Succes / total paiements</p>
           </article>
         </div>
 
