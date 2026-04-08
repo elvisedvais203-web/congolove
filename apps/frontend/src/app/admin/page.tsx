@@ -8,15 +8,23 @@ import Link from "next/link";
 
 export default function AdminPage() {
   const [stats, setStats] = useState<any>(null);
+  const [statsError, setStatsError] = useState(false);
 
   useEffect(() => {
-    api.get("/moderation/admin/stats").then((res) => setStats(res.data));
+    api.get("/moderation/admin/stats")
+      .then((res) => setStats(res.data))
+      .catch(() => setStatsError(true));
   }, []);
 
   return (
     <AdminGuard>
       <section>
         <SectionHeader title="Admin" subtitle="Dashboard, moderation, paiements et configuration systeme" />
+        {statsError && (
+          <div className="mb-4 rounded-xl border border-amber-500/30 bg-amber-500/10 px-4 py-3 text-sm text-amber-400">
+            Impossible de charger les statistiques. Verifiez que le backend est accessible et que la base de donnees est migree.
+          </div>
+        )}
         <div className="grid gap-4 md:grid-cols-4">
           {[
             { label: "Utilisateurs", value: stats?.users ?? 0 },

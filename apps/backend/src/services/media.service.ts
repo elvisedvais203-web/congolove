@@ -1,5 +1,6 @@
 import { v2 as cloudinary } from "cloudinary";
 import { env } from "../config/env";
+import { ApiError } from "../utils/ApiError";
 
 cloudinary.config({
   cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
@@ -10,13 +11,13 @@ cloudinary.config({
 export async function uploadMedia(filePath: string, folder: string): Promise<string> {
   if (env.mediaProvider !== "cloudinary") {
     if (env.nodeEnv === "production") {
-      throw new Error("MEDIA_PROVIDER invalide en production. Configurez Cloudinary.");
+      throw new ApiError(503, "Stockage media non configure. Contactez l'administrateur.");
     }
     return `http://localhost/mock-media/${folder}/${Date.now()}`;
   }
 
   if (!process.env.CLOUDINARY_CLOUD_NAME || !process.env.CLOUDINARY_API_KEY || !process.env.CLOUDINARY_API_SECRET) {
-    throw new Error("Cloudinary non configure. Renseignez CLOUDINARY_CLOUD_NAME/API_KEY/API_SECRET.");
+    throw new ApiError(503, "Stockage media non configure. Contactez l'administrateur.");
   }
 
   const uploaded = await cloudinary.uploader.upload(filePath, {

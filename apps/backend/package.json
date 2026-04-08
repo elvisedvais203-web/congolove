@@ -5,7 +5,8 @@
   "scripts": {
     "dev": "tsx watch src/server.ts",
     "build": "prisma generate && tsc -p tsconfig.json",
-    "start": "node dist/src/server.js",
+    "start": "prisma migrate deploy && node dist/src/server.js",
+    "postinstall": "prisma generate",
     "lint": "tsc --noEmit",
     "test:security:smoke": "tsx src/scripts/security-smoke.ts",
     "prisma:generate": "prisma generate",

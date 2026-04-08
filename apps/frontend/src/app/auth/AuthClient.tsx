@@ -37,6 +37,15 @@ function normalizeError(message: string) {
   if (text.includes("session-expired") || text.includes("code-expired")) {
     return "Code expire. Demandez un nouveau code.";
   }
+  if (text.includes("unauthorized-domain") || text.includes("unauthorized_domain")) {
+    return "Ce domaine n'est pas autorise sur Firebase. Contactez le support.";
+  }
+  if (text.includes("captcha-check-failed") || text.includes("recaptcha")) {
+    return "Verification anti-robot echouee. Rechargez la page et reessayez.";
+  }
+  if (text.includes("network-request-failed") || text.includes("network")) {
+    return "Connexion reseau echouee. Verifiez votre acces Internet.";
+  }
   return "Une erreur est survenue. Veuillez reessayer.";
 }
 
@@ -50,14 +59,23 @@ export default function AuthClient() {
   const [sending, setSending] = useState(false);
   const [verifying, setVerifying] = useState(false);
 
-  useEffect(() => {
+  function initRecaptcha() {
     if (window.recaptchaVerifier) {
       return;
     }
-
-    window.recaptchaVerifier = new RecaptchaVerifier(auth, "recaptcha-container", {
-      size: "invisible"
+    const verifier = new RecaptchaVerifier(auth, "recaptcha-container", {
+      size: "invisible",
+      callback: () => {},
+      "expired-callback": () => {
+        window.recaptchaVerifier = undefined;
+      }
     });
+    verifier.render().catch(() => {});
+    window.recaptchaVerifier = verifier;
+  }
+
+  useEffect(() => {
+    initRecaptcha();
   }, []);
 
   const sendCode = async () => {
@@ -76,12 +94,15 @@ export default function AuthClient() {
       setStatus(`Code SMS envoye vers ${normalizedPhone}.`);
       setStatusType("success");
     } catch (error: any) {
-      setStatus(normalizeError(String(error?.message ?? "")));
+      setStatus(normalizeError(String(error?.message ?? error?.code ?? "")));
       setStatusType("error");
-      window.recaptchaVerifier.clear();
-      window.recaptchaVerifier = new RecaptchaVerifier(auth, "recaptcha-container", {
-        size: "invisible"
-      });
+      try {
+        window.recaptchaVerifier?.clear();
+      } catch {
+        // ignore clear errors
+      }
+      window.recaptchaVerifier = undefined;
+      setTimeout(() => initRecaptcha(), 300);
     } finally {
       setSending(false);
     }
@@ -182,7 +203,7 @@ export default function AuthClient() {
             </div>
           )}
 
-          <div id="recaptcha-container" />
+          <div id="recaptcha-container" className="flex justify-center" />
         </div>
       </section>
     </div>

@@ -413,11 +413,11 @@ export default function SettingsPage() {
               <div className="grid grid-cols-2 gap-3">
                 <label className="text-sm text-slate-300">
                   Age min
-                  <input type="number" min={18} max={70} value={prefs.ageMin} onChange={(event) => setPref("ageMin", Number(event.target.value))} className="mt-1 w-full rounded-xl border border-white/20 bg-black/20 px-3 py-2" />
+                  <input type="number" min={18} max={70} value={prefs.ageMin} onChange={(event) => setPref("ageMin", Number(event.target.value))} className="mt-1 w-full rounded-xl border border-white/20 bg-white/5 px-3 py-2 text-white" />
                 </label>
                 <label className="text-sm text-slate-300">
                   Age max
-                  <input type="number" min={18} max={80} value={prefs.ageMax} onChange={(event) => setPref("ageMax", Number(event.target.value))} className="mt-1 w-full rounded-xl border border-white/20 bg-black/20 px-3 py-2" />
+                  <input type="number" min={18} max={80} value={prefs.ageMax} onChange={(event) => setPref("ageMax", Number(event.target.value))} className="mt-1 w-full rounded-xl border border-white/20 bg-white/5 px-3 py-2 text-white" />
                 </label>
               </div>
               <div className="flex flex-wrap gap-2">
