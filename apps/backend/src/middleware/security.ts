@@ -30,10 +30,7 @@ export const paymentLimiter = rateLimit({
   message: { message: "Limite paiement atteinte, reessayez plus tard" }
 });
 
-const allowedOrigins = env.corsOrigin
-  .split(",")
-  .map((o) => o.trim())
-  .filter(Boolean);
+const allowedOrigins = env.corsOrigins;
 
 export function applySecurityMiddlewares(app: Express): void {
   app.use(

@@ -17,6 +17,7 @@ import notificationsRoutes from "./notifications.routes";
 import paymentWebhookRoutes from "./payment-webhook.routes";
 import { prisma } from "../config/db";
 import { redis } from "../config/redis";
+import { env } from "../config/env";
 
 const router = Router();
 
@@ -32,7 +33,8 @@ router.get("/health", (_req, res) => {
 router.get("/ready", async (_req, res) => {
 	const checks = {
 		database: false,
-		redis: false
+		redis: false,
+		redisConfigured: env.redisConfigured
 	};
 
 	try {

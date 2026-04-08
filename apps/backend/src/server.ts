@@ -6,22 +6,10 @@ import { registerChatSocket } from "./sockets/chat.socket";
 import { logger } from "./utils/logger";
 import { prisma } from "./config/db";
 import { redis } from "./config/redis";
+import { ensureBootstrapData } from "./services/bootstrap.service";
 
-const app = createApp();
-const httpServer = createServer(app);
-
-const io = new Server(httpServer, {
-  cors: {
-    origin: env.corsOrigin,
-    credentials: true
-  }
-});
-
-registerChatSocket(io);
-
-const server = httpServer.listen(env.port, () => {
-  logger.info(`API et Socket.io en cours sur le port ${env.port}`);
-});
+let server: ReturnType<typeof createServer>["listen"] extends (...args: never[]) => infer T ? T : never;
+let io: Server;
 
 let shuttingDown = false;
 
@@ -32,9 +20,9 @@ async function shutdown(signal: string) {
   shuttingDown = true;
   logger.warn(`Arret en cours (${signal})`);
 
-  server.close(async () => {
+  server?.close(async () => {
     try {
-      io.close();
+      io?.close();
       await prisma.$disconnect();
       redis.disconnect();
       logger.info("Arret propre termine");
@@ -71,3 +59,35 @@ process.on("uncaughtException", (error) => {
   logger.error("Uncaught exception", { message: error.message });
   void shutdown("uncaughtException");
 });
+
+async function start() {
+  try {
+    await prisma.$connect();
+    await ensureBootstrapData();
+
+    const app = createApp();
+    const httpServer = createServer(app);
+
+    io = new Server(httpServer, {
+      cors: {
+        origin: env.corsOrigins,
+        credentials: true
+      }
+    });
+
+    registerChatSocket(io);
+
+    server = httpServer.listen(env.port, () => {
+      logger.info(`API et Socket.io en cours sur le port ${env.port}`);
+    });
+  } catch (error) {
+    logger.error("Echec du demarrage backend", {
+      message: error instanceof Error ? error.message : String(error)
+    });
+    await prisma.$disconnect().catch(() => undefined);
+    redis.disconnect();
+    process.exit(1);
+  }
+}
+
+void start();

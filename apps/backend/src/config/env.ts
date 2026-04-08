@@ -1,11 +1,22 @@
 import "dotenv/config";
 
+function parseCorsOrigins(raw: string): string[] {
+  return raw
+    .split(",")
+    .map((origin) => origin.trim())
+    .filter(Boolean);
+}
+
+const corsOrigin = process.env.CORS_ORIGIN ?? "http://localhost:3000,https://congolove-web.onrender.com";
+
 export const env = {
   nodeEnv: process.env.NODE_ENV ?? "development",
   port: Number(process.env.PORT ?? process.env.API_PORT ?? 4000),
-  corsOrigin: process.env.CORS_ORIGIN ?? "http://localhost:3000,https://congolove-web.onrender.com",
+  corsOrigin,
+  corsOrigins: parseCorsOrigins(corsOrigin),
   databaseUrl: process.env.DATABASE_URL ?? "",
-  redisUrl: process.env.REDIS_URL ?? "redis://localhost:6379",
+  redisUrl: process.env.REDIS_URL ?? "",
+  redisConfigured: Boolean(process.env.REDIS_URL?.trim()),
   jwtAccessSecret: process.env.JWT_ACCESS_SECRET ?? "access_secret",
   jwtRefreshSecret: process.env.JWT_REFRESH_SECRET ?? "refresh_secret",
   jwtAccessTtl: process.env.JWT_ACCESS_TTL ?? "15m",
