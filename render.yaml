@@ -5,8 +5,8 @@ services:
     plan: starter
     rootDir: .
     buildCommand: npm install --include=dev && npm run build --workspace @kongo-love/backend
-    startCommand: npm run start --workspace @kongo-love/backend
-    healthCheckPath: /api/health
+    startCommand: npm run start:render --workspace @kongo-love/backend
+    healthCheckPath: /api/ready
     envVars:
       - key: NODE_ENV
         value: production
@@ -15,7 +15,7 @@ services:
       - key: API_BASE_URL
         sync: false
       - key: CORS_ORIGIN
-        value: "https://app.congolove.com,http://localhost:3000"
+        value: "https://app.congolove.com"
       - key: DATABASE_URL
         sync: false
       - key: REDIS_URL
@@ -29,7 +29,9 @@ services:
       - key: JWT_REFRESH_TTL
         value: 30d
       - key: DEBUG_ERRORS
-        value: "true"
+        value: "false"
+      - key: PAYMENT_WEBHOOK_SECRET
+        sync: false
       - key: FIREBASE_PROJECT_ID
         sync: false
       - key: FIREBASE_CLIENT_EMAIL
@@ -75,3 +77,5 @@ services:
         sync: false
       - key: NEXT_PUBLIC_FIREBASE_APP_ID
         sync: false
+      - key: NEXT_PUBLIC_FIREBASE_AUTH_DISABLE_APP_VERIFICATION
+        value: "false"
