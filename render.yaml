@@ -20,8 +20,6 @@ services:
         sync: false
       - key: REDIS_URL
         sync: false
-      - key: MEDIA_PROVIDER
-        value: cloudinary
       - key: JWT_ACCESS_SECRET
         sync: false
       - key: JWT_REFRESH_SECRET

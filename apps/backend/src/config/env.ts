@@ -27,64 +27,24 @@ function rejectWeakSecretInProduction(name: string, value: string, forbidden: st
   return normalized;
 }
 
-function rejectPlaceholderInProduction(name: string, value: string, forbiddenSnippets: string[]): string {
-  const normalized = String(value ?? "").trim();
-  if (!isProduction) {
-    return normalized;
-  }
-
-  const lowered = normalized.toLowerCase();
-  const hasPlaceholder = forbiddenSnippets.some((snippet) => lowered.includes(snippet.toLowerCase()));
-  if (hasPlaceholder) {
-    throw new Error(`Variable d'environnement invalide en production (${name}): placeholder detecte`);
-  }
-
-  return normalized;
-}
-
-const databaseUrl = rejectPlaceholderInProduction(
-  "DATABASE_URL",
-  requiredInProduction("DATABASE_URL", process.env.DATABASE_URL ?? ""),
-  ["user:password@host", "db_name", "changeme", "replace_me"]
-);
+const databaseUrl = requiredInProduction("DATABASE_URL", process.env.DATABASE_URL ?? "");
 const jwtAccessSecret = rejectWeakSecretInProduction("JWT_ACCESS_SECRET", process.env.JWT_ACCESS_SECRET ?? "access_secret", ["", "access_secret"]);
 const jwtRefreshSecret = rejectWeakSecretInProduction("JWT_REFRESH_SECRET", process.env.JWT_REFRESH_SECRET ?? "refresh_secret", ["", "refresh_secret"]);
 const paymentWebhookSecret = rejectWeakSecretInProduction("PAYMENT_WEBHOOK_SECRET", process.env.PAYMENT_WEBHOOK_SECRET ?? "dev_payment_webhook_secret", ["", "dev_payment_webhook_secret"]);
 
-const redisUrl = rejectPlaceholderInProduction(
-  "REDIS_URL",
-  process.env.REDIS_URL ?? "",
-  ["password@host", ":port", "changeme", "replace_me"]
-);
-if (isProduction && !redisUrl.trim()) {
-  throw new Error("Variable d'environnement requise en production: REDIS_URL");
-}
-
-const firebaseProjectId = rejectPlaceholderInProduction("FIREBASE_PROJECT_ID", process.env.FIREBASE_PROJECT_ID ?? "", ["your-firebase-project-id", "xxxxx"]);
-const firebaseClientEmail = rejectPlaceholderInProduction("FIREBASE_CLIENT_EMAIL", process.env.FIREBASE_CLIENT_EMAIL ?? "", ["firebase-adminsdk-xxxxx", "your-firebase-project-id"]);
-const firebasePrivateKey = rejectPlaceholderInProduction("FIREBASE_PRIVATE_KEY", process.env.FIREBASE_PRIVATE_KEY ?? "", ["-----begin private key-----\n...", "replace_me", "changeme"]);
-const firebaseServiceAccountJson = rejectPlaceholderInProduction("FIREBASE_SERVICE_ACCOUNT_JSON", process.env.FIREBASE_SERVICE_ACCOUNT_JSON ?? "", ["your-firebase-project-id", "-----begin private key-----\\n..."]);
+const firebaseProjectId = process.env.FIREBASE_PROJECT_ID ?? "";
+const firebaseClientEmail = process.env.FIREBASE_CLIENT_EMAIL ?? "";
+const firebasePrivateKey = process.env.FIREBASE_PRIVATE_KEY ?? "";
+const firebaseServiceAccountJson = process.env.FIREBASE_SERVICE_ACCOUNT_JSON ?? "";
 if (isProduction && !firebaseServiceAccountJson && (!firebaseProjectId || !firebaseClientEmail || !firebasePrivateKey)) {
   throw new Error("Configuration Firebase Admin incomplete en production");
 }
 
 const mediaProvider = process.env.MEDIA_PROVIDER ?? "cloudinary";
 if (isProduction && mediaProvider === "cloudinary") {
-  rejectPlaceholderInProduction(
-    "CLOUDINARY_CLOUD_NAME",
-    requiredInProduction("CLOUDINARY_CLOUD_NAME", process.env.CLOUDINARY_CLOUD_NAME ?? ""),
-    ["ton_cloud_name", "your_cloud_name"]
-  );
-  rejectPlaceholderInProduction(
-    "CLOUDINARY_API_KEY",
-    requiredInProduction("CLOUDINARY_API_KEY", process.env.CLOUDINARY_API_KEY ?? ""),
-    ["ton_api_key", "your_api_key", "replace_me"]
-  );
-  rejectPlaceholderInProduction(
-    "CLOUDINARY_API_SECRET",
-    requiredInProduction("CLOUDINARY_API_SECRET", process.env.CLOUDINARY_API_SECRET ?? ""),
-    ["ton_api_secret", "your_api_secret", "replace_me"]
-  );
+  requiredInProduction("CLOUDINARY_CLOUD_NAME", process.env.CLOUDINARY_CLOUD_NAME ?? "");
+  requiredInProduction("CLOUDINARY_API_KEY", process.env.CLOUDINARY_API_KEY ?? "");
+  requiredInProduction("CLOUDINARY_API_SECRET", process.env.CLOUDINARY_API_SECRET ?? "");
 }
 
 const corsOrigins = parseCorsOrigins(corsOrigin);
@@ -98,8 +58,8 @@ export const env = {
   corsOrigin,
   corsOrigins,
   databaseUrl,
-  redisUrl,
-  redisConfigured: Boolean(redisUrl.trim()),
+  redisUrl: process.env.REDIS_URL ?? "",
+  redisConfigured: Boolean(process.env.REDIS_URL?.trim()),
   jwtAccessSecret,
   jwtRefreshSecret,
   jwtAccessTtl: process.env.JWT_ACCESS_TTL ?? "15m",
