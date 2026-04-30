@@ -29,10 +29,10 @@ jobs:
         run: npm run build:shared
 
       - name: Backend type check
-        run: npm --workspace @kongo-love/backend run build -- --noEmit
+        run: npm --workspace @nextalk/backend run build -- --noEmit
 
       - name: Frontend type check
-        run: npm --workspace @kongo-love/frontend exec tsc --noEmit
+        run: npm --workspace @nextalk/frontend exec tsc --noEmit
 
       - name: Backend build
         run: npm run build:backend
