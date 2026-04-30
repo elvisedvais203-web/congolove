@@ -612,6 +612,7 @@ export async function editChatMessage(userId: string, messageId: string, text: s
     data: { text, editedAt: new Date() },
     include: {
       sender: { include: { profile: true, photos: true } },
+      replyTo: { include: { sender: { include: { profile: true, photos: true } } } },
       receipts: true,
       reactions: true
     }
@@ -636,6 +637,7 @@ export async function deleteChatMessage(userId: string, messageId: string) {
     },
     include: {
       sender: { include: { profile: true, photos: true } },
+      replyTo: { include: { sender: { include: { profile: true, photos: true } } } },
       receipts: true,
       reactions: true
     }
@@ -664,6 +666,7 @@ export async function toggleReaction(userId: string, messageId: string, emoji: s
     where: { id: messageId },
     include: {
       sender: { include: { profile: true, photos: true } },
+      replyTo: { include: { sender: { include: { profile: true, photos: true } } } },
       receipts: true,
       reactions: true
     }
@@ -896,6 +899,7 @@ export async function broadcastToChannel(userId: string, channelId: string, text
     },
     include: {
       sender: { include: { profile: true, photos: true } },
+      replyTo: { include: { sender: { include: { profile: true, photos: true } } } },
       receipts: true,
       reactions: true
     }

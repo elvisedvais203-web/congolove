@@ -1,7 +1,7 @@
 import bcrypt from "bcryptjs";
 import { PrismaClient } from "@prisma/client";
-import { env } from "../src/config/env";
-import { normalizeRdcPhone } from "../src/utils/phone";
+import { env } from "../src/config/nextalkenv";
+import { normalizeRdcPhone } from "../src/utils/nextalkphone";
 
 const prisma = new PrismaClient();
 
