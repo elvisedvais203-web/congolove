@@ -17,12 +17,12 @@
 1. Configurer variables .env backend.
 2. Installer dependances puis build:
    - npm install
-   - npm run build --workspace @kongo-love/backend
+   - npm run build --workspace @nextalk/backend
 3. Migrer DB:
-   - npm run prisma:migrate --workspace @kongo-love/backend
+   - npm run prisma:migrate --workspace @nextalk/backend
 4. Sur Render:
-   - Build command: npm install ; npm run build --workspace @kongo-love/backend
-   - Start command: npm start --workspace @kongo-love/backend
+   - Build command: npm install ; npm run build --workspace @nextalk/backend
+   - Start command: npm start --workspace @nextalk/backend
    - Variables: DATABASE_URL, REDIS_URL, JWT_*, FIREBASE_*, CORS_ORIGIN=https://app.congolove.com
 
 ## Etapes frontend
@@ -76,7 +76,7 @@
 - Appliquer CSRF: recuperer /api/security/csrf-token apres login puis envoyer x-csrf-token sur POST/PATCH/DELETE
 - Activer audit trail: verifier la table audit_logs et brancher export SIEM
 - Anti-spam chat: seuils Redis en place (flood, repetition, liens)
-- Executer le smoke test: npm run test:security:smoke --workspace @kongo-love/backend
+- Executer le smoke test: npm run test:security:smoke --workspace @nextalk/backend
 
 ## Qualite continue
 - Workflow GitHub Actions actif: `.github/workflows/quality.yml`

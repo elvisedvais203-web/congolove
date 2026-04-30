@@ -1,10 +1,11 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { AuthGuard } from "../../components/AuthGuard";
-import { SectionHeader } from "../../components/SectionHeader";
-import { logoutSession } from "../../lib/session";
+import { AuthGuard } from "../../components/nextalkauthguard";
+import { SectionHeader } from "../../components/nextalksectionheader";
+import { logoutSession } from "../../lib/nextalksession";
 import {
   DEFAULT_PREFERENCES,
   applyPreferencesToDocument,
@@ -13,16 +14,16 @@ import {
   type ChatTheme,
   type UserPreferences,
   type VoiceTranscriptMode
-} from "../../lib/preferences";
-import { fetchCsrfToken } from "../../services/security";
-import api from "../../lib/api";
+} from "../../lib/nextalkpreferences";
+import { fetchCsrfToken } from "../../services/nextalksecurity";
+import api from "../../lib/nextalkapi";
 import {
   archiveConversation,
   clearAllConversations,
   deleteAllConversations,
   getChatMessages,
   getConversations
-} from "../../services/chat";
+} from "../../services/nextalkchat";
 
 type SettingsTab = "compte" | "discussion" | "confidentialite" | "media" | "notifications";
 type DangerAction = "clear" | "delete" | "account";
@@ -145,6 +146,8 @@ export default function SettingsPage() {
   const [prefs, setPrefs] = useState<UserPreferences>(() => getStoredPreferences());
   const [status, setStatus] = useState("");
   const [busy, setBusy] = useState(false);
+  const [search, setSearch] = useState("");
+  const [geoBusy, setGeoBusy] = useState(false);
   const [dangerAction, setDangerAction] = useState<DangerAction | null>(null);
   const [dangerValue, setDangerValue] = useState("");
 
@@ -192,7 +195,7 @@ export default function SettingsPage() {
 
   const saveAll = async () => {
     if (prefs.ageMin > prefs.ageMax) {
-      setStatus("Age minimum doit etre inferieur ou egal a age maximum.");
+      setStatus("L’âge minimum doit être inférieur ou égal à l’âge maximum.");
       return;
     }
 
@@ -234,9 +237,9 @@ export default function SettingsPage() {
 
       saveStoredPreferences(prefs);
       applyPreferencesToDocument(prefs);
-      setStatus("Parametres enregistres et appliques sur toute l'application.");
+      setStatus("Paramètres enregistrés et appliqués dans toute l’application.");
     } catch {
-      setStatus("Echec d'enregistrement des parametres. Veuillez reessayer.");
+      setStatus("Échec d’enregistrement des paramètres. Veuillez réessayer.");
     } finally {
       setBusy(false);
     }
@@ -246,7 +249,7 @@ export default function SettingsPage() {
     setPrefs(DEFAULT_PREFERENCES);
     saveStoredPreferences(DEFAULT_PREFERENCES);
     applyPreferencesToDocument(DEFAULT_PREFERENCES);
-    setStatus("Parametres reinitialises.");
+    setStatus("Paramètres réinitialisés.");
   };
 
   const exportDiscussions = async () => {
@@ -272,10 +275,10 @@ export default function SettingsPage() {
       const url = URL.createObjectURL(blob);
       const a = document.createElement("a");
       a.href = url;
-      a.download = `kongo-love-discussions-${Date.now()}.json`;
+      a.download = `nextalk-discussions-${Date.now()}.json`;
       a.click();
       URL.revokeObjectURL(url);
-      setStatus("Export des discussions termine.");
+      setStatus("Export des discussions terminé.");
     } catch {
       setStatus("Export impossible pour le moment.");
     } finally {
@@ -336,7 +339,7 @@ export default function SettingsPage() {
         data: { confirmation: "SUPPRIMER" }
       });
       logoutSession();
-      router.replace("/auth");
+      router.replace("/");
     } catch {
       setStatus("Impossible de supprimer le compte pour le moment.");
     } finally {
@@ -376,47 +379,101 @@ export default function SettingsPage() {
     () => [
       { id: "compte" as const, label: "Compte" },
       { id: "discussion" as const, label: "Discussions" },
-      { id: "confidentialite" as const, label: "Confidentialite" },
-      { id: "media" as const, label: "Media" },
+      { id: "confidentialite" as const, label: "Confidentialité" },
+      { id: "media" as const, label: "Médias" },
       { id: "notifications" as const, label: "Notifications" }
     ],
     []
   );
 
+  const filteredTabs = useMemo(() => {
+    const q = search.trim().toLowerCase();
+    if (!q) return tabs;
+    return tabs.filter((t) => t.label.toLowerCase().includes(q));
+  }, [search, tabs]);
+
+  const updateLocation = async () => {
+    if (typeof window === "undefined" || !("geolocation" in navigator)) {
+      setStatus("Géolocalisation indisponible sur cet appareil.");
+      return;
+    }
+    try {
+      setGeoBusy(true);
+      const coords = await new Promise<{ latitude: number; longitude: number }>((resolve, reject) => {
+        navigator.geolocation.getCurrentPosition(
+          (pos) => resolve({ latitude: pos.coords.latitude, longitude: pos.coords.longitude }),
+          (err) => reject(err),
+          { enableHighAccuracy: true, timeout: 15000, maximumAge: 60_000 }
+        );
+      });
+      const csrf = await fetchCsrfToken();
+      await api.patch(
+        "/profile/me",
+        { latitude: coords.latitude, longitude: coords.longitude },
+        { headers: { "x-csrf-token": csrf } }
+      );
+      setStatus("Emplacement mis à jour.");
+    } catch {
+      setStatus("Impossible de récupérer l’emplacement. Vérifiez les permissions.");
+    } finally {
+      setGeoBusy(false);
+    }
+  };
+
   return (
     <AuthGuard>
-      <section>
-        <SectionHeader title="Parametres et activite" subtitle="Toutes les fonctionnalites sont centralisees ici et appliquees en temps reel" />
+      <section className="pb-8">
+        <div className="grid gap-4 lg:grid-cols-[320px_1fr]">
+          <aside className="glass rounded-3xl p-4 lg:sticky lg:top-24 lg:self-start">
+            <p className="font-heading text-xl text-white">Paramètres</p>
+            <div className="mt-3">
+              <input
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                placeholder="Recherche"
+                className="input-neon w-full rounded-2xl px-3 py-2 text-sm"
+              />
+            </div>
 
-        <div className="mb-4 flex flex-wrap gap-2">
-          {tabs.map((item) => {
-            const active = tab === item.id;
-            return (
-              <button
-                key={item.id}
-                onClick={() => setTab(item.id)}
-                className={`rounded-full px-4 py-2 text-sm ${active ? "bg-neoblue text-[#08101d]" : "glass text-slate-200"}`}
-              >
-                {item.label}
-              </button>
-            );
-          })}
-        </div>
+            <div className="mt-4 space-y-2">
+              {filteredTabs.map((item) => {
+                const active = tab === item.id;
+                return (
+                  <button
+                    key={item.id}
+                    onClick={() => setTab(item.id)}
+                    className={`w-full rounded-2xl px-4 py-3 text-left text-sm transition ${
+                      active ? "bg-white/10 text-white" : "text-slate-300 hover:bg-white/5 hover:text-white"
+                    }`}
+                  >
+                    {item.label}
+                  </button>
+                );
+              })}
+            </div>
+          </aside>
+
+          <div>
+            <SectionHeader
+              title="Paramètres"
+            />
+
+            {/* menu onglets remplace par sidebar */}
 
         {tab === "compte" && (
           <div className="grid gap-4 xl:grid-cols-2">
             <SettingCard title="Votre compte">
               <div>
-                <label className="text-sm text-slate-300">Distance maximale: {prefs.distanceKm} km</label>
+                <label className="text-sm text-slate-300">Distance maximale : {prefs.distanceKm} km</label>
                 <input type="range" min={5} max={200} step={5} value={prefs.distanceKm} onChange={(event) => setPref("distanceKm", Number(event.target.value))} aria-label="Distance maximale" className="mt-2 w-full" />
               </div>
               <div className="grid grid-cols-2 gap-3">
                 <label className="text-sm text-slate-300">
-                  Age min
+                  Âge min
                   <input type="number" min={18} max={70} value={prefs.ageMin} onChange={(event) => setPref("ageMin", Number(event.target.value))} className="mt-1 w-full rounded-xl border border-white/20 bg-white/5 px-3 py-2 text-white" />
                 </label>
                 <label className="text-sm text-slate-300">
-                  Age max
+                  Âge max
                   <input type="number" min={18} max={80} value={prefs.ageMax} onChange={(event) => setPref("ageMax", Number(event.target.value))} className="mt-1 w-full rounded-xl border border-white/20 bg-white/5 px-3 py-2 text-white" />
                 </label>
               </div>
@@ -455,7 +512,7 @@ export default function SettingsPage() {
               </div>
 
               <div>
-                <p className="text-sm text-slate-300">Theme global</p>
+                <p className="text-sm text-slate-300">Thème global</p>
                 <div className="mt-2 flex gap-2">
                   <button onClick={() => setPref("theme", "dark")} className={`rounded-xl px-3 py-2 text-sm ${prefs.theme === "dark" ? "bg-neoblue/25 text-neoblue" : "bg-white/10 text-slate-300"}`}>Sombre</button>
                   <button onClick={() => setPref("theme", "light")} className={`rounded-xl px-3 py-2 text-sm ${prefs.theme === "light" ? "bg-neoblue/25 text-neoblue" : "bg-white/10 text-slate-300"}`}>Clair</button>
@@ -463,7 +520,7 @@ export default function SettingsPage() {
               </div>
 
               <div>
-                <p className="text-sm text-slate-300">Theme de discussion</p>
+                <p className="text-sm text-slate-300">Thème de discussion</p>
                 <div className="mt-2 flex gap-2">
                   {[
                     { key: "classic", label: "Classique" },
@@ -481,15 +538,56 @@ export default function SettingsPage() {
                 </div>
               </div>
             </SettingCard>
+
+            <SettingCard title="Emplacement">
+              <button
+                onClick={() => void updateLocation()}
+                disabled={geoBusy}
+                className="btn-outline-neon w-full rounded-xl px-4 py-2 text-left text-sm disabled:opacity-60"
+              >
+                {geoBusy ? "Mise à jour..." : "Mettre à jour l’emplacement"}
+              </button>
+            </SettingCard>
+
+            <SettingCard title="Infos & liens utiles">
+              <div className="grid gap-2">
+                <Link href="/channels" className="btn-neon w-full rounded-xl px-4 py-2 text-left text-sm">
+                  Créer un nouveau canal
+                </Link>
+                <Link href="/about" className="btn-outline-neon w-full rounded-xl px-4 py-2 text-left text-sm">
+                  À propos
+                </Link>
+                <Link href="/help" className="btn-outline-neon w-full rounded-xl px-4 py-2 text-left text-sm">
+                  Aide
+                </Link>
+                <Link href="/safety" className="btn-outline-neon w-full rounded-xl px-4 py-2 text-left text-sm">
+                  Sécurité
+                </Link>
+                <Link href="/contact" className="btn-outline-neon w-full rounded-xl px-4 py-2 text-left text-sm">
+                  Contact
+                </Link>
+                <div className="grid gap-2 sm:grid-cols-2">
+                  <Link href="/legal/terms" className="btn-outline-neon w-full rounded-xl px-4 py-2 text-left text-sm">
+                    Conditions
+                  </Link>
+                  <Link href="/legal/privacy" className="btn-outline-neon w-full rounded-xl px-4 py-2 text-left text-sm">
+                    Confidentialité
+                  </Link>
+                  <Link href="/legal/cookies" className="btn-outline-neon w-full rounded-xl px-4 py-2 text-left text-sm">
+                    Cookies
+                  </Link>
+                </div>
+              </div>
+            </SettingCard>
           </div>
         )}
 
         {tab === "discussion" && (
           <div className="grid gap-4 xl:grid-cols-2">
             <SettingCard title="Conversations">
-              <SettingSwitch label="Animations" description="Active les animations de discussion" checked={prefs.chatAnimations} onChange={(value) => setPref("chatAnimations", value)} />
-              <SettingSwitch label="Accuses de lecture" description="Afficher le statut Envoye / Lu" checked={prefs.readReceipts} onChange={(value) => setPref("readReceipts", value)} />
-              <SettingSwitch label="Sauvegarde auto des photos/medias" description="Active les boutons de telechargement rapide" checked={prefs.autoSaveMedia} onChange={(value) => setPref("autoSaveMedia", value)} />
+              <SettingSwitch label="Animations" description="Transitions et animations dans les discussions" checked={prefs.chatAnimations} onChange={(value) => setPref("chatAnimations", value)} />
+              <SettingSwitch label="Accusés de lecture" description="Afficher l’état Envoyé / Lu" checked={prefs.readReceipts} onChange={(value) => setPref("readReceipts", value)} />
+              <SettingSwitch label="Téléchargement rapide des médias" description="Afficher les actions de téléchargement sur les médias" checked={prefs.autoSaveMedia} onChange={(value) => setPref("autoSaveMedia", value)} />
               <div className="rounded-2xl border border-white/10 bg-black/20 p-3">
                 <p className="text-sm text-white">Transcrire les messages vocaux</p>
                 <div className="mt-2 flex gap-2">
@@ -528,20 +626,20 @@ export default function SettingsPage() {
 
         {tab === "confidentialite" && (
           <div className="grid gap-4 xl:grid-cols-2">
-            <SettingCard title="Confidentialite du compte">
+            <SettingCard title="Confidentialité du compte">
               <SettingSwitch label="Profil visible" checked={prefs.profileVisibility === "VISIBLE"} onChange={(value) => setPref("profileVisibility", value ? "VISIBLE" : "HIDDEN")} />
               <SettingSwitch label="Messages de tous" checked={prefs.messagePolicy === "ALL"} onChange={(value) => setPref("messagePolicy", value ? "ALL" : "MATCH_ONLY")} />
-              <SettingSwitch label="Masquer statut en ligne" checked={prefs.hideOnlineStatus} onChange={(value) => setPref("hideOnlineStatus", value)} />
+              <SettingSwitch label="Masquer le statut en ligne" checked={prefs.hideOnlineStatus} onChange={(value) => setPref("hideOnlineStatus", value)} />
               <SettingSwitch label="Mode invisible" checked={prefs.invisibleMode} onChange={(value) => setPref("invisibleMode", value)} />
             </SettingCard>
 
-            <SettingCard title="Securite & acces">
-              <SettingSwitch label="Mode economie de donnees" checked={prefs.dataSaver} onChange={(value) => setPref("dataSaver", value)} />
-              <button onClick={() => setStatus("Centre de confidentialite pret. Connectez la page backend de policies pour finaliser.")} className="w-full rounded-xl border border-white/10 bg-white/5 px-4 py-2 text-left text-sm text-white hover:bg-white/10">
-                Ouvrir le centre de confidentialite
+            <SettingCard title="Sécurité">
+              <SettingSwitch label="Mode économie de données" checked={prefs.dataSaver} onChange={(value) => setPref("dataSaver", value)} />
+              <button onClick={() => setStatus("Centre de confidentialite pret. Connectez la route backend correspondante pour finaliser.")} className="w-full rounded-xl border border-white/10 bg-white/5 px-4 py-2 text-left text-sm text-white hover:bg-white/10">
+                Ouvrir le centre de confidentialité
               </button>
               <button onClick={() => setStatus("Comptes restreints: module pret, activez la route backend pour filtrage avance.")} className="w-full rounded-xl border border-white/10 bg-white/5 px-4 py-2 text-left text-sm text-white hover:bg-white/10">
-                Gerer comptes restreints
+                Gérer les comptes restreints
               </button>
             </SettingCard>
           </div>
@@ -549,18 +647,21 @@ export default function SettingsPage() {
 
         {tab === "media" && (
           <div className="grid gap-4 xl:grid-cols-2">
-            <SettingCard title="Contenu multimedia">
-              <SettingSwitch label="Qualite HD" description="Desactivez pour optimiser le debit data" checked={!prefs.dataSaver} onChange={(value) => setPref("dataSaver", !value)} />
+            <SettingCard title="Contenu multimédia">
+              <SettingSwitch label="Qualité HD" description="Désactivez pour réduire l’utilisation de données" checked={!prefs.dataSaver} onChange={(value) => setPref("dataSaver", !value)} />
               <SettingSwitch label="Autoriser camera/galerie" description="Necessaire pour stories, reels et messages media" checked={true} onChange={() => setStatus("Les autorisations se reglent depuis le navigateur ou le telephone.")} />
               <button onClick={() => setStatus("Archivage et telechargements actifs via export JSON et bouton medias dans les chats.")} className="w-full rounded-xl border border-white/10 bg-white/5 px-4 py-2 text-left text-sm text-white hover:bg-white/10">
                 Archivage et telechargements
               </button>
             </SettingCard>
 
-            <SettingCard title="Applications liees">
-              <button onClick={() => setStatus("WhatsApp: lien actif via profil et modules social/chat deja integres.")} className="w-full rounded-xl border border-white/10 bg-white/5 px-4 py-2 text-left text-sm text-white hover:bg-white/10">WhatsApp</button>
-              <button onClick={() => setStatus("Instagram: stories/reels/activite deja disponibles dans la navigation.")} className="w-full rounded-xl border border-white/10 bg-white/5 px-4 py-2 text-left text-sm text-white hover:bg-white/10">Instagram</button>
-              <button onClick={() => setStatus("Facebook/Threads/Messenger: hub social pret pour extension crosspostage.")} className="w-full rounded-xl border border-white/10 bg-white/5 px-4 py-2 text-left text-sm text-white hover:bg-white/10">Facebook / Threads / Messenger</button>
+            <SettingCard title="Intégrations">
+              <button onClick={() => setStatus("Intégrations externes : module prêt. Activez les connecteurs si nécessaire.")} className="w-full rounded-xl border border-white/10 bg-white/5 px-4 py-2 text-left text-sm text-white hover:bg-white/10">
+                Connecteurs externes
+              </button>
+              <button onClick={() => setStatus("Partage : configuration prête. Ajoutez vos destinations de publication.")} className="w-full rounded-xl border border-white/10 bg-white/5 px-4 py-2 text-left text-sm text-white hover:bg-white/10">
+                Partage et publication
+              </button>
             </SettingCard>
           </div>
         )}
@@ -587,12 +688,12 @@ export default function SettingsPage() {
         )}
 
         <div className="mt-5 flex flex-wrap gap-2">
-          <button onClick={() => void saveAll()} disabled={busy} className="rounded-xl bg-neoblue px-4 py-2 font-semibold text-[#041127] disabled:opacity-60">
+          <button onClick={() => void saveAll()} disabled={busy} className="rounded-xl bg-[#38d37f] px-4 py-2 font-semibold text-[#041127] transition-colors hover:bg-[#4be191] disabled:opacity-60">
             {busy ? "Traitement..." : "Enregistrer tout"}
           </button>
-          <button onClick={resetAll} className="rounded-xl border border-white/20 px-4 py-2 text-slate-200">Reinitialiser</button>
-          <button onClick={() => { logoutSession(); router.replace("/auth"); }} className="rounded-xl border border-red-500/40 bg-red-500/10 px-4 py-2 text-red-200">
-            Se deconnecter
+          <button onClick={resetAll} className="rounded-xl border border-white/20 px-4 py-2 text-slate-200">Réinitialiser</button>
+          <button onClick={() => { logoutSession(); router.replace("/"); }} className="rounded-xl border border-red-500/40 bg-red-500/10 px-4 py-2 text-red-200">
+            Se déconnecter
           </button>
           <button onClick={() => openDangerModal("account")} className="rounded-xl border border-red-500/40 bg-red-900/20 px-4 py-2 text-red-100">
             Supprimer le compte
@@ -610,6 +711,8 @@ export default function SettingsPage() {
             onConfirm={() => void confirmDangerAction()}
           />
         ) : null}
+          </div>
+        </div>
       </section>
     </AuthGuard>
   );

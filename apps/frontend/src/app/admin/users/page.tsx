@@ -1,10 +1,10 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { SectionHeader } from "../../../components/SectionHeader";
-import { AdminGuard } from "../../../components/AdminGuard";
-import api from "../../../lib/api";
-import { fetchCsrfToken } from "../../../services/security";
+import { SectionHeader } from "../../../components/nextalksectionheader";
+import { AdminGuard } from "../../../components/nextalkadminguard";
+import api from "../../../lib/nextalkapi";
+import { fetchCsrfToken } from "../../../services/nextalksecurity";
 
 type AdminUserRow = {
   id: string;
@@ -98,7 +98,7 @@ export default function AdminUsersPage() {
   return (
     <AdminGuard>
       <section>
-        <SectionHeader title="Admin utilisateurs" subtitle="Gestion des comptes, verification et bannissement" />
+        <SectionHeader title="Admin utilisateurs" />
         <div className="glass overflow-hidden rounded-2xl">
           <div className="grid grid-cols-[1.3fr_1fr_0.8fr_0.8fr_0.8fr_1.3fr] gap-3 border-b border-white/10 px-4 py-3 text-xs uppercase tracking-wide text-slate-400">
             <span>Utilisateur</span>

@@ -2,10 +2,10 @@
 
 import { useEffect, useRef, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
-import { AuthGuard } from "../../../components/AuthGuard";
-import { getStoredUser } from "../../../lib/session";
-import { fetchCsrfToken } from "../../../services/security";
-import { sendChatMessage, getChatMessages, deleteChatMessage, type ChatMessage } from "../../../services/chat";
+import { AuthGuard } from "../../../components/nextalkauthguard";
+import { getStoredUser } from "../../../lib/nextalksession";
+import { fetchCsrfToken } from "../../../services/nextalksecurity";
+import { sendChatMessage, getChatMessages, deleteChatMessage, type ChatMessage } from "../../../services/nextalkchat";
 
 export default function ConversationPage() {
   const { contactId } = useParams<{ contactId: string }>();
@@ -61,8 +61,6 @@ export default function ConversationPage() {
           {messages.length === 0 && (
             <div className="flex flex-col items-center justify-center h-full text-center py-16">
               <svg viewBox="0 0 24 24" className="h-10 w-10 mb-3 text-neoblue" fill="none" stroke="currentColor" strokeWidth="1.8"><path d="M4 6h16v12H4z"/><path d="M4 7l8 6 8-6"/></svg>
-              <p className="font-heading text-lg text-white">Demarrez la conversation</p>
-              <p className="text-sm text-[var(--muted)] mt-1">Envoyez votre premier message.</p>
             </div>
           )}
           {messages.map((msg) => {

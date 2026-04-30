@@ -1,9 +1,9 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { AdminGuard } from "../../../components/AdminGuard";
-import { SectionHeader } from "../../../components/SectionHeader";
-import api from "../../../lib/api";
+import { AdminGuard } from "../../../components/nextalkadminguard";
+import { SectionHeader } from "../../../components/nextalksectionheader";
+import api from "../../../lib/nextalkapi";
 
 type RestrictionRow = {
   id: string;
@@ -147,7 +147,7 @@ export default function AdminRestrictionsPage() {
   return (
     <AdminGuard>
       <section>
-        <SectionHeader title="Admin restrictions" subtitle="Historique complet des suspensions, bannissements et levees" />
+        <SectionHeader title="Admin restrictions" />
         <div className="mb-3 flex flex-wrap items-center gap-2">
           <button
             onClick={() => setActiveOnly((value) => !value)}

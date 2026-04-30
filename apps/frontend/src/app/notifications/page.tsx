@@ -1,8 +1,8 @@
 "use client";
 
 import { useState } from "react";
-import { SectionHeader } from "../../components/SectionHeader";
-import { getMyPushTokens, subscribePushToken } from "../../services/notifications";
+import { SectionHeader } from "../../components/nextalksectionheader";
+import { getMyPushTokens, subscribePushToken } from "../../services/nextalknotifications";
 
 const notifications = [
   { type: "LIKE", text: "Vous avez recu 2 nouveaux likes", time: "Il y a 5 min" },
@@ -13,6 +13,7 @@ const notifications = [
 
 export default function NotificationsPage() {
   const [pushStatus, setPushStatus] = useState("");
+  const [filter, setFilter] = useState<"Tout" | "Likes" | "Messages" | "Matchs">("Tout");
 
   const activatePush = async () => {
     try {
@@ -38,10 +39,10 @@ export default function NotificationsPage() {
 
   return (
     <section>
-      <SectionHeader title="Notifications" subtitle="Likes, messages, matchs et alertes securite" />
+      <SectionHeader title="Notifications" />
       <div className="mb-4 flex items-center gap-2">
         <button onClick={() => void activatePush()} className="btn-outline-neon rounded-xl px-3 py-2 text-xs">
-          Activer push web
+          Activer les notifications web
         </button>
         {pushStatus && <p className="text-xs text-slate-300">{pushStatus}</p>}
       </div>
@@ -52,13 +53,26 @@ export default function NotificationsPage() {
           "Messages",
           "Matchs"
         ].map((chip) => (
-          <span key={chip} className="rounded-full border border-white/15 bg-white/5 px-3 py-1 text-slate-300">
+          <button
+            key={chip}
+            onClick={() => setFilter(chip as "Tout" | "Likes" | "Messages" | "Matchs")}
+            className={`rounded-full border px-3 py-1 ${
+              filter === chip ? "border-neoblue/40 bg-neoblue/15 text-neoblue" : "border-white/15 bg-white/5 text-slate-300"
+            }`}
+          >
             {chip}
-          </span>
+          </button>
         ))}
       </div>
       <div className="space-y-3">
-        {notifications.map((item) => (
+        {notifications
+          .filter((item) => {
+            if (filter === "Tout") return true;
+            if (filter === "Likes") return item.type === "LIKE";
+            if (filter === "Messages") return item.type === "MESSAGE";
+            return item.type === "MATCH";
+          })
+          .map((item) => (
           <article key={`${item.type}-${item.text}`} className="glass rounded-2xl p-4 text-sm text-slate-200">
             <div className="flex items-start justify-between gap-3">
               <div>

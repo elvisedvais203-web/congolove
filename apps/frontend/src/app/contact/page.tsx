@@ -1,12 +1,12 @@
 ﻿"use client";
 
 import { useState } from "react";
-import { SectionHeader } from "../../components/SectionHeader";
+import { SectionHeader } from "../../components/nextalksectionheader";
 
 const channels = [
-  { icon: "MAIL", title: "Email support", value: "support@kongolove.app", desc: "Reponse sous 24h" },
+  { icon: "MAIL", title: "Email support", value: "support@nextalk.app", desc: "Reponse sous 24 h" },
   { icon: "CHAT", title: "Chat en direct", value: "Disponible 8h-22h", desc: "Lun-Sam" },
-  { icon: "WA", title: "WhatsApp", value: "+243 97X XXX XXX", desc: "Messages uniquement" },
+  { icon: "TEL", title: "Téléphone", value: "+243 97X XXX XXX", desc: "Appels et messages" },
 ];
 
 export default function ContactPage() {
@@ -26,7 +26,7 @@ export default function ContactPage() {
 
   return (
     <section className="space-y-6 animate-fade-in">
-      <SectionHeader title="Contact" subtitle="Partenariats, support et communication" />
+      <SectionHeader title="Contact" />
 
       <div className="grid gap-3 md:grid-cols-3">
         {channels.map((c) => (
@@ -48,7 +48,7 @@ export default function ContactPage() {
               <svg viewBox="0 0 24 24" className="h-8 w-8 text-[#39ff14]" fill="none" stroke="currentColor" strokeWidth="2"><path d="M20 6L9 17l-5-5"/></svg>
             </div>
             <p className="font-heading text-xl text-white mb-1">Message envoye !</p>
-            <p className="text-sm text-slate-400">Notre equipe vous repond dans les meilleurs delais.</p>
+              <p className="text-sm text-slate-400">Notre equipe vous repond dans les meilleurs delais ouvrables.</p>
             <button onClick={() => { setSent(false); setName(""); setEmail(""); setMsg(""); }} className="mt-5 btn-outline-neon rounded-2xl px-5 py-2.5 text-sm">Envoyer un autre message</button>
           </div>
         ) : (
@@ -65,7 +65,7 @@ export default function ContactPage() {
             </div>
             <div>
               <label className="block text-xs text-slate-400 mb-1.5">Message</label>
-              <textarea value={msg} onChange={(e) => setMsg(e.target.value)} required rows={5} className="input-neon w-full resize-none rounded-2xl px-4 py-3 text-sm" placeholder="Decrivez votre demande..." />
+              <textarea value={msg} onChange={(e) => setMsg(e.target.value)} required rows={5} className="input-neon w-full resize-none rounded-2xl px-4 py-3 text-sm" placeholder="Decrivez votre demande de facon precise..." />
             </div>
             <button type="submit" disabled={loading} className="btn-neon w-full rounded-2xl py-3.5 font-semibold disabled:opacity-50 flex items-center justify-center gap-2">
               {loading && <svg className="h-4 w-4 animate-spin" viewBox="0 0 24 24" fill="none"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/></svg>}

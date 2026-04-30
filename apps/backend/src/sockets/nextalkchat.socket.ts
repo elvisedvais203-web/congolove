@@ -1,0 +1,203 @@
+import { Server, Socket } from "socket.io";
+import { MessageType } from "@prisma/client";
+import { sendChatMessage, markChatRead, broadcastToChannel } from "../services/nextalkchat.service";
+
+type CallPayload = {
+  callId: string;
+  chatId: string;
+  fromUserId: string;
+  toUserIds: string[];
+  mode: "audio" | "video";
+};
+
+export function registerChatSocket(io: Server) {
+  const onlineUsers = new Map<string, string>();
+
+  io.on("connection", (socket: Socket) => {
+    socket.on("presence:online", (userId: string) => {
+      onlineUsers.set(userId, socket.id);
+      socket.join(`user:${userId}`);
+      io.emit("presence:update", { userId, status: "online" });
+    });
+
+    socket.on("presence:heartbeat", (userId: string) => {
+      if (userId) {
+        onlineUsers.set(userId, socket.id);
+      }
+    });
+
+    socket.on("join_chat", (chatId: string) => {
+      socket.join(`chat:${chatId}`);
+    });
+
+    socket.on("leave_chat", (chatId: string) => {
+      socket.leave(`chat:${chatId}`);
+    });
+
+    socket.on("join_match", (matchId: string) => {
+      socket.join(`chat:${matchId}`);
+    });
+
+    socket.on("typing:start", (payload: { chatId?: string; matchId?: string; userId: string }) => {
+      const room = payload.chatId ?? payload.matchId;
+      if (!room) {
+        return;
+      }
+      socket.to(`chat:${room}`).emit("typing:update", {
+        userId: payload.userId,
+        chatId: room,
+        isTyping: true
+      });
+    });
+
+    socket.on("typing:stop", (payload: { chatId?: string; matchId?: string; userId: string }) => {
+      const room = payload.chatId ?? payload.matchId;
+      if (!room) {
+        return;
+      }
+      socket.to(`chat:${room}`).emit("typing:update", {
+        userId: payload.userId,
+        chatId: room,
+        isTyping: false
+      });
+    });
+
+    socket.on("recording:start", (payload: { chatId: string; userId: string }) => {
+      socket.to(`chat:${payload.chatId}`).emit("recording:update", {
+        userId: payload.userId,
+        chatId: payload.chatId,
+        isRecording: true
+      });
+    });
+
+    socket.on("recording:stop", (payload: { chatId: string; userId: string }) => {
+      socket.to(`chat:${payload.chatId}`).emit("recording:update", {
+        userId: payload.userId,
+        chatId: payload.chatId,
+        isRecording: false
+      });
+    });
+
+    socket.on(
+      "send_message",
+      async (payload: {
+        chatId: string;
+        senderId: string;
+        planTier: "FREE" | "PREMIUM";
+        type: MessageType;
+        text?: string;
+        mediaUrl?: string;
+        fileName?: string;
+        durationSec?: number;
+      }) => {
+        try {
+          const message = await sendChatMessage(payload.senderId, {
+            chatId: payload.chatId,
+            type: payload.type,
+            text: payload.text,
+            mediaUrl: payload.mediaUrl,
+            fileName: payload.fileName,
+            durationSec: payload.durationSec,
+            planTier: payload.planTier
+          });
+          io.to(`chat:${payload.chatId}`).emit("new_message", message);
+        } catch (error) {
+          socket.emit("message_error", {
+            message: error instanceof Error ? error.message : "Erreur envoi message"
+          });
+        }
+      }
+    );
+
+    socket.on("message:read", async (payload: { chatId: string; readerId: string }) => {
+      try {
+        await markChatRead(payload.readerId, payload.chatId);
+        io.to(`chat:${payload.chatId}`).emit("message:read:update", payload);
+      } catch (error) {
+        socket.emit("read_error", {
+          message: error instanceof Error ? error.message : "Erreur marquage lu"
+        });
+      }
+    });
+
+    socket.on("message:reaction", (payload: { chatId: string; messageId: string; userId: string; emoji: string }) => {
+      io.to(`chat:${payload.chatId}`).emit("message:reaction:update", payload);
+    });
+
+    socket.on("call:start", (payload: CallPayload) => {
+      for (const userId of payload.toUserIds) {
+        io.to(`user:${userId}`).emit("call:incoming", payload);
+      }
+    });
+
+    socket.on(
+      "call:signal",
+      (payload: {
+        callId: string;
+        toUserId: string;
+        fromUserId: string;
+        description?: Record<string, unknown>;
+        candidate?: Record<string, unknown>;
+      }) => {
+        io.to(`user:${payload.toUserId}`).emit("call:signal", payload);
+      }
+    );
+
+    socket.on("call:accepted", (payload: { callId: string; fromUserId: string; toUserId: string }) => {
+      io.to(`user:${payload.toUserId}`).emit("call:accepted", payload);
+    });
+
+    socket.on("call:declined", (payload: { callId: string; fromUserId: string; toUserId: string }) => {
+      io.to(`user:${payload.toUserId}`).emit("call:declined", payload);
+    });
+
+    socket.on("call:end", (payload: { callId: string; targetUserIds: string[] }) => {
+      for (const userId of payload.targetUserIds) {
+        io.to(`user:${userId}`).emit("call:ended", payload);
+      }
+    });
+
+    // Channel events
+    socket.on("channel:join", (channelId: string) => {
+      socket.join(`channel:${channelId}`);
+    });
+
+    socket.on("channel:leave", (channelId: string) => {
+      socket.leave(`channel:${channelId}`);
+    });
+
+    socket.on(
+      "channel:broadcast",
+      async (payload: {
+        channelId: string;
+        senderId: string;
+        text: string;
+        mediaUrl?: string;
+        mediaType?: "IMAGE" | "VIDEO" | "AUDIO" | "DOCUMENT";
+      }) => {
+        try {
+          const message = await broadcastToChannel(
+            payload.senderId,
+            payload.channelId,
+            payload.text,
+            payload.mediaUrl,
+            payload.mediaType
+          );
+          io.to(`channel:${payload.channelId}`).emit("channel:new_message", message);
+        } catch (error) {
+          socket.emit("channel_broadcast_error", {
+            message: error instanceof Error ? error.message : "Erreur diffusion canal"
+          });
+        }
+      }
+    );
+
+    socket.on("disconnect", () => {
+      const offlineUser = [...onlineUsers.entries()].find(([, socketId]) => socketId === socket.id)?.[0];
+      if (offlineUser) {
+        onlineUsers.delete(offlineUser);
+        io.emit("presence:update", { userId: offlineUser, status: "offline" });
+      }
+    });
+  });
+}

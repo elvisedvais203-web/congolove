@@ -1,9 +1,9 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { SectionHeader } from "../../../components/SectionHeader";
-import { AdminGuard } from "../../../components/AdminGuard";
-import api from "../../../lib/api";
+import { SectionHeader } from "../../../components/nextalksectionheader";
+import { AdminGuard } from "../../../components/nextalkadminguard";
+import api from "../../../lib/nextalkapi";
 
 type ReportRow = {
   id: string;
@@ -39,7 +39,7 @@ export default function AdminReportsPage() {
   return (
     <AdminGuard>
       <section>
-        <SectionHeader title="Admin signalements" subtitle="Moderation proactive et traitement des abus" />
+        <SectionHeader title="Admin signalements" />
         <div className="grid gap-4">
           {rows.map((row) => (
             <article key={row.id} className="glass rounded-2xl p-5">

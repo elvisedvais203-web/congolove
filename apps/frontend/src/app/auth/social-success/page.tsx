@@ -47,7 +47,7 @@ function SocialSuccessContent() {
 
   return (
     <section className="mx-auto mt-12 max-w-lg rounded-3xl border border-white/15 bg-[#0a1125f0] p-6 text-center">
-      <h1 className="font-heading text-3xl text-white">Connexion sociale</h1>
+      <h1 className="font-heading text-3xl text-white">Connexion via reseau social</h1>
       <p className="mt-3 text-sm text-slate-300">
         Finalisation de la connexion {payload.provider ? `(${payload.provider})` : ""}...
       </p>
@@ -60,7 +60,7 @@ export default function SocialSuccessPage() {
     <Suspense
       fallback={
         <section className="mx-auto mt-12 max-w-lg rounded-3xl border border-white/15 bg-[#0a1125f0] p-6 text-center">
-          <h1 className="font-heading text-3xl text-white">Connexion sociale</h1>
+          <h1 className="font-heading text-3xl text-white">Connexion via reseau social</h1>
           <p className="mt-3 text-sm text-slate-300">Finalisation de la connexion...</p>
         </section>
       }

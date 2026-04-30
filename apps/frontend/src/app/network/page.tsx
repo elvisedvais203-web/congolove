@@ -1,10 +1,10 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { SectionHeader } from "../../components/SectionHeader";
-import { commentFeedPost, createFeedPost, followUser, getFeed, getNetwork, getSuggestions, likeFeedPost, unfollowUser } from "../../services/social";
-import { fetchCsrfToken } from "../../services/security";
-import { AuthGuard } from "../../components/AuthGuard";
+import { SectionHeader } from "../../components/nextalksectionheader";
+import { commentFeedPost, createFeedPost, followUser, getFeed, getNetwork, getSuggestions, likeFeedPost, unfollowUser } from "../../services/nextalksocial";
+import { fetchCsrfToken } from "../../services/nextalksecurity";
+import { AuthGuard } from "../../components/nextalkauthguard";
 
 export default function NetworkPage() {
   const [network, setNetwork] = useState<any>({ followers: [], following: [] });
@@ -29,7 +29,7 @@ export default function NetworkPage() {
     try {
       const csrf = await fetchCsrfToken();
       await followUser(id, csrf);
-      setStatus("Abonnement effectue");
+      setStatus("Abonnement effectue.");
       await load();
     } catch {
       setStatus("Echec d'abonnement. Veuillez reessayer.");
@@ -40,7 +40,7 @@ export default function NetworkPage() {
     try {
       const csrf = await fetchCsrfToken();
       await unfollowUser(id, csrf);
-      setStatus("Desabonnement effectue");
+      setStatus("Desabonnement effectue.");
       await load();
     } catch {
       setStatus("Echec de desabonnement. Veuillez reessayer.");
@@ -90,14 +90,14 @@ export default function NetworkPage() {
   return (
     <AuthGuard>
       <section>
-        <SectionHeader title="Reseau" subtitle="Followers, following et suggestions" />
+        <SectionHeader title="Reseau" />
         <div className="mb-5 grid gap-3 md:grid-cols-2">
           <article className="glass rounded-2xl p-4">
             <h2 className="font-heading text-lg">Followers</h2>
             <p className="mt-2 text-sm text-slate-300">{network.followers.length} abonnes</p>
           </article>
           <article className="glass rounded-2xl p-4">
-            <h2 className="font-heading text-lg">Following</h2>
+            <h2 className="font-heading text-lg">Abonnements</h2>
             <p className="mt-2 text-sm text-slate-300">{network.following.length} abonnements</p>
           </article>
         </div>
@@ -142,7 +142,7 @@ export default function NetworkPage() {
 
                 <div className="mt-3 flex items-center gap-2">
                   <button onClick={() => void likePost(post.id)} className="rounded-xl border border-white/20 px-3 py-1.5 text-xs text-slate-200">
-                    {post.likedByMe ? "Unlike" : "Like"} ({post.likesCount})
+                    {post.likedByMe ? "Retirer le like" : "Liker"} ({post.likesCount})
                   </button>
                 </div>
 

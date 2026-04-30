@@ -1,11 +1,11 @@
-import { SectionHeader } from "../../../components/SectionHeader";
+import { SectionHeader } from "../../../components/nextalksectionheader";
 
 export default function CookiesPage() {
   return (
     <section className="space-y-5 animate-fade-in">
-      <SectionHeader title="Politique cookies" subtitle="Mesure de performance et confort utilisateur" accent="blue" />
+      <SectionHeader title="Politique cookies" accent="blue" />
       <article className="glass neon-border rounded-3xl p-5 text-sm text-slate-300 space-y-4">
-        <p>Des cookies peuvent etre utilises pour garder votre session active, ameliorer l interface et analyser la performance.</p>
+        <p>Des cookies peuvent etre utilises pour maintenir votre session active, ameliorer l interface et analyser la performance.</p>
         <h3 className="font-heading text-white text-base">1. Cookies necessaires</h3>
         <p>Indispensables pour l authentification, la securite CSRF et la disponibilite des fonctions essentielles.</p>
         <h3 className="font-heading text-white text-base">2. Cookies analytiques</h3>

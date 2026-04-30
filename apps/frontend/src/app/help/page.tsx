@@ -1,14 +1,14 @@
-﻿"use client";
+"use client";
 
 import { useState } from "react";
-import { SectionHeader } from "../../components/SectionHeader";
+import { SectionHeader } from "../../components/nextalksectionheader";
 
 const faqs = [
-  { q: "Comment verifier mon profil ?", a: "Ajoutez des photos claires, verifiez votre numero via Firebase SMS et completez au moins 80% de votre profil. Le badge Verifie augmente vos chances de match de 3x." },
-  { q: "Comment activer le mode economie data ?", a: "Rendez-vous dans Reglages > Accessibilite > Mode economie data. Les images seront compressees et les videos pausees automatiquement." },
+  { q: "Comment verifier mon profil ?", a: "Ajoutez des photos claires, verifiez votre numero via Firebase SMS et completez au moins 80% de votre profil. Le badge Verifie augmente vos chances de match par 3." },
+  { q: "Comment activer le mode economie data ?", a: "Rendez-vous dans Reglages > Accessibilite > Mode economie data. Les images sont compressees et les videos sont mises en pause automatiquement." },
   { q: "Que faire si je recois des messages inappropries ?", a: "Appuyez longuement sur le message, puis selectionnez Signaler. Notre equipe moderera sous 24h. Vous pouvez aussi bloquer l utilisateur depuis son profil." },
   { q: "Comment payer avec Mobile Money ?", a: "Dans Premium, choisissez votre operateur (Airtel, Orange, M-Pesa...), entrez votre numero et confirmez. Un code vous sera envoye par SMS." },
-  { q: "Peut-on utiliser KongoLove hors de la RDC ?", a: "Oui. Meme en diaspora, vous pouvez mettre votre ville d origine en RDC ou utiliser la localisation manuelle. Les paiements internationaux seront disponibles prochainement." },
+  { q: "Peut-on utiliser Solola hors de la RDC ?", a: "Oui. Meme en diaspora, vous pouvez choisir votre ville d origine en RDC ou utiliser la localisation manuelle. Les paiements internationaux seront disponibles prochainement." },
   { q: "Comment supprimer mon compte ?", a: "Reglages > Confidentialite > Supprimer le compte. Toutes vos donnees seront supprimees sous 30 jours conformement au RGPD." },
   { q: "Mon match a disparu, pourquoi ?", a: "Si un match disparait, l une des deux personnes a peut-etre annule le like ou ete suspendue. Un email de notification vous sera envoye." },
   { q: "Y a-t-il une verification des identites ?", a: "Oui, nous utilisons la verification Firebase SMS par numero congolais et un processus de verification photo pour les profils Premium." },
@@ -19,7 +19,7 @@ export default function HelpPage() {
 
   return (
     <section className="space-y-6 animate-fade-in">
-      <SectionHeader title="Centre d aide" subtitle="FAQ, support et bonnes pratiques" />
+      <SectionHeader title="Centre d aide" />
 
       <div className="space-y-2">
         {faqs.map((item, i) => (
@@ -44,7 +44,7 @@ export default function HelpPage() {
         </div>
         <div className="flex-1">
           <p className="font-semibold text-white">Support direct</p>
-          <p className="text-sm text-slate-400 mt-0.5">Vous ne trouvez pas votre reponse ? Contactez-nous directement.</p>
+          <p className="text-sm text-slate-400 mt-0.5">Vous ne trouvez pas votre reponse ? Contactez notre equipe directement.</p>
         </div>
         <a href="/contact" className="btn-outline-neon shrink-0 rounded-2xl px-4 py-2 text-sm">Contacter</a>
       </div>

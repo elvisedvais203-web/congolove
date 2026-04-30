@@ -17,7 +17,7 @@ async function main() {
     update: {},
     create: {
       phone: "+243970000001",
-      email: "alice@kongolove.cd",
+      email: "alice@nextalk.app",
       passwordHash,
       otpVerified: true,
       planTier: "PREMIUM",
@@ -46,7 +46,7 @@ async function main() {
     update: {},
     create: {
       phone: "+243990000002",
-      email: "amani@kongolove.cd",
+      email: "amani@nextalk.app",
       passwordHash,
       otpVerified: true,
       planTier: "FREE",
@@ -66,7 +66,7 @@ async function main() {
     update: {},
     create: {
       phone: "+243980000003",
-      email: "merveille@kongolove.cd",
+      email: "merveille@nextalk.app",
       passwordHash,
       otpVerified: true,
       planTier: "PREMIUM",

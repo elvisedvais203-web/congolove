@@ -1,9 +1,9 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { SectionHeader } from "../../components/SectionHeader";
-import api from "../../lib/api";
-import { AdminGuard } from "../../components/AdminGuard";
+import { SectionHeader } from "../../components/nextalksectionheader";
+import api from "../../lib/nextalkapi";
+import { AdminGuard } from "../../components/nextalkadminguard";
 import Link from "next/link";
 
 export default function AdminPage() {
@@ -19,7 +19,7 @@ export default function AdminPage() {
   return (
     <AdminGuard>
       <section>
-        <SectionHeader title="Admin" subtitle="Dashboard, moderation, paiements et configuration systeme" />
+        <SectionHeader title="Admin" />
         {statsError && (
           <div className="mb-4 rounded-xl border border-amber-500/30 bg-amber-500/10 px-4 py-3 text-sm text-amber-400">
             Impossible de charger les statistiques. Verifiez que le backend est accessible et que la base de donnees est migree.
@@ -48,12 +48,12 @@ export default function AdminPage() {
           <article className="glass rounded-2xl p-4">
             <p className="text-xs uppercase tracking-[0.16em] text-gold">Signalements</p>
             <p className="mt-2 font-heading text-3xl text-white">{stats?.reports ?? 0}</p>
-            <p className="text-xs text-slate-400">Queue moderation active</p>
+            <p className="text-xs text-slate-400">File de moderation active</p>
           </article>
           <article className="glass rounded-2xl p-4">
             <p className="text-xs uppercase tracking-[0.16em] text-gold">Transactions</p>
             <p className="mt-2 font-heading text-3xl text-white">{stats?.successfulPaymentsCount ?? 0} / {stats?.paymentsCount ?? 0}</p>
-            <p className="text-xs text-slate-400">Succes / total paiements</p>
+            <p className="text-xs text-slate-400">Succes / total des paiements</p>
           </article>
         </div>
 
@@ -71,10 +71,10 @@ export default function AdminPage() {
             Analytics et retention
           </Link>
           <Link href="/premium" className="glass rounded-xl px-4 py-3 text-sm text-slate-200 hover:text-white">
-            Paiements et plans (Free/Premium)
+            Paiements et offres (Free/Premium)
           </Link>
           <Link href="/safety" className="glass rounded-xl px-4 py-3 text-sm text-slate-200 hover:text-white">
-            Parametres systeme securite/API
+            Parametres systeme securite et API
           </Link>
         </div>
       </section>

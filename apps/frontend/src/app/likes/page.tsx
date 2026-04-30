@@ -2,11 +2,11 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { SectionHeader } from "../../components/SectionHeader";
-import { AuthGuard } from "../../components/AuthGuard";
-import api from "../../lib/api";
-import { getStoredUser } from "../../lib/session";
-import { fetchCsrfToken } from "../../services/security";
+import { SectionHeader } from "../../components/nextalksectionheader";
+import { AuthGuard } from "../../components/nextalkauthguard";
+import api from "../../lib/nextalkapi";
+import { getStoredUser } from "../../lib/nextalksession";
+import { fetchCsrfToken } from "../../services/nextalksecurity";
 
 type LikeRow = {
   id: string;
@@ -44,7 +44,7 @@ export default function LikesPage() {
     try {
       const csrf = await fetchCsrfToken();
       await api.post("/matching/like", { targetUserId }, { headers: { "x-csrf-token": csrf } });
-      setStatus("Like envoye !");
+      setStatus("Like envoye.");
     } catch (e: any) {
       setStatus(e?.response?.data?.message ?? "Impossible d envoyer le like.");
     }
@@ -55,7 +55,6 @@ export default function LikesPage() {
       <section>
         <SectionHeader
           title="Likes recus"
-          subtitle={isPremium ? `${likes.length} personnes ont aime votre profil` : "Debloquez Premium pour voir qui vous a aime"}
           accent="pink"
         />
 
@@ -70,7 +69,7 @@ export default function LikesPage() {
             </div>
             <Link href="/premium"
               className="inline-block btn-gold rounded-2xl px-6 py-2.5 text-sm font-bold">
-              Activer Premium - 15 000 CDF / mois
+              Activer Premium - 15 000 CDF/mois
             </Link>
           </div>
         )}
@@ -134,8 +133,7 @@ export default function LikesPage() {
         {!loading && likes.length === 0 && (
           <div className="glass rounded-3xl p-10 text-center neon-border">
             <p className="text-5xl mb-4">0</p>
-            <p className="font-heading text-xl text-white">Aucun like pour l instant</p>
-            <p className="mt-2 text-sm text-[var(--muted)]">Completez votre profil et explorez des profils pour plus de visibilite.</p>
+            <p className="font-heading text-xl text-white">Aucun like pour le moment</p>
             <Link href="/discover" className="mt-4 inline-block btn-neon rounded-2xl px-6 py-2.5 text-sm font-bold">
               Explorer des profils
             </Link>

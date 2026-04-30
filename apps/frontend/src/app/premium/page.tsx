@@ -1,8 +1,8 @@
 "use client";
 
 import { useState } from "react";
-import { SectionHeader } from "../../components/SectionHeader";
-import { buyPremium } from "../../services/payments";
+import { SectionHeader } from "../../components/nextalksectionheader";
+import { buyPremium } from "../../services/nextalkpayments";
 
 const providers = ["airtel_money", "orange_money", "m_pesa", "africell_money", "afrimoney"];
 
@@ -17,7 +17,7 @@ export default function PremiumPage() {
     try {
       setLoading(true);
       const payment = await buyPremium(provider, phone, 15000);
-      setMessage(`Paiement ${payment.status} via ${provider}`);
+      setMessage(`Paiement ${payment.status} via ${provider.replace("_", " ").toUpperCase()}`);
     } catch {
       setMessage("Erreur lors du paiement. Veuillez reessayer.");
     } finally {
@@ -36,7 +36,7 @@ export default function PremiumPage() {
 
   return (
     <section className="space-y-6 animate-fade-in">
-      <SectionHeader title="Premium" subtitle="Debloquez toute l'experience KongoLove" accent="gold" />
+      <SectionHeader title="Premium" accent="gold" />
 
       <div className="grid gap-4 md:grid-cols-3">
         {features.map((f) => (
@@ -62,7 +62,7 @@ export default function PremiumPage() {
             <label htmlFor="premium-provider" className="block text-xs text-[var(--muted)] mb-1.5 font-medium">Operateur Mobile Money</label>
             <select id="premium-provider" value={provider} onChange={(e) => setProvider(e.target.value)} className="input-neon w-full rounded-2xl px-4 py-3 text-sm">
               {providers.map((p) => (
-                <option key={p} value={p}>{p.replace("_", " ").toUpperCase()}</option>
+                <option key={p} value={p}>{p.replaceAll("_", " ").toUpperCase()}</option>
               ))}
             </select>
           </div>
@@ -88,7 +88,7 @@ export default function PremiumPage() {
           </div>
         )}
 
-        <p className="mt-4 text-center text-xs text-[var(--muted)]">Annulable a tout moment · Sans frais caches · 100% securise</p>
+        <p className="mt-4 text-center text-xs text-[var(--muted)]">Annulable a tout moment - Sans frais caches - 100% securise</p>
       </div>
     </section>
   );

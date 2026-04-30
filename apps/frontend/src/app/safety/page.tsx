@@ -1,13 +1,13 @@
-import { SectionHeader } from "../../components/SectionHeader";
+import { SectionHeader } from "../../components/nextalksectionheader";
 
 export default function SafetyPage() {
   return (
     <section className="space-y-6 animate-fade-in">
-      <SectionHeader title="Securite" subtitle="Protegez vos donnees et vos interactions" accent="pink" />
+      <SectionHeader title="Securite" accent="pink" />
 
       <div className="glass neon-border-pink rounded-4xl p-6">
         <p className="text-sm text-slate-300">
-          La securite est prioritaire sur KongoLove. Notre equipe combine verification des comptes, moderation automatique
+          La securite est une priorite sur Solola. Notre equipe combine verification des comptes, moderation automatique
           et moderation humaine pour maintenir une communaute respectueuse.
         </p>
       </div>
@@ -16,10 +16,10 @@ export default function SafetyPage() {
         <article className="glass card-hover neon-border rounded-3xl p-5">
           <h2 className="font-heading text-lg text-white">Compte et acces</h2>
           <ul className="mt-3 space-y-2 text-sm text-slate-300">
-            <li>Connectez-vous uniquement via verification SMS Firebase.</li>
+            <li>Connectez-vous uniquement via la verification SMS Firebase.</li>
             <li>Verifiez toujours que votre numero est correct (+243...).</li>
             <li>Ne partagez jamais vos codes de verification.</li>
-            <li>Activez les notifications de connexion inhabituelle.</li>
+            <li>Activez les notifications de connexion inhabituelles.</li>
           </ul>
         </article>
         <article className="glass card-hover neon-border-violet rounded-3xl p-5">
@@ -27,7 +27,7 @@ export default function SafetyPage() {
           <ul className="mt-3 space-y-2 text-sm text-slate-300">
             <li>Bloquez immediatement tout profil agressif ou suspect.</li>
             <li>Signalez les contenus offensants en un clic.</li>
-            <li>Evitez de partager votre adresse ou vos codes OTP.</li>
+            <li>Evitez de partager votre adresse, vos codes OTP ou des donnees sensibles.</li>
             <li>Utilisez l appel audio/video uniquement apres verification mutuelle.</li>
           </ul>
         </article>

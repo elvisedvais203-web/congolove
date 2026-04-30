@@ -84,10 +84,50 @@ enum MessagePolicy {
   MATCH_ONLY
 }
 
+enum ContentClassification {
+  SAFE
+  SUSPICIOUS
+  TOXIC
+  HATE_SPEECH
+  SEXUAL_CONTENT
+  VIOLENCE
+  SPAM
+  SCAM
+}
+
+enum ModerationSeverity {
+  LOW
+  MEDIUM
+  HIGH
+  CRITICAL
+}
+
+enum ReviewStatus {
+  PENDING
+  APPROVED
+  REJECTED
+  ESCALATED
+  RESOLVED
+}
+
+enum PrivacyMode {
+  PUBLIC
+  PRIVATE
+  SEMI_PRIVATE
+}
+
+enum MessageStatus {
+  SENT
+  DELIVERED
+  SEEN
+}
+
 model User {
   id               String        @id @default(uuid())
   email            String?       @unique
   phone            String        @unique
+  username         String?       @unique
+  usernameSearchLower String?    @unique
   passwordHash     String
   otpVerified      Boolean       @default(false)
   planTier         PlanTier      @default(FREE)
@@ -95,6 +135,7 @@ model User {
   dataSaverEnabled Boolean       @default(false)
   invisibleMode    Boolean       @default(false)
   role             UserRole      @default(USER)
+  privacyMode      PrivacyMode   @default(PUBLIC)
   createdAt        DateTime      @default(now())
   updatedAt        DateTime      @updatedAt
 
@@ -124,6 +165,20 @@ model User {
   feedPosts        FeedPost[]        @relation("UserFeedPosts")
   feedPostLikes    FeedPostLike[]    @relation("UserFeedPostLikes")
   feedPostComments FeedPostComment[] @relation("UserFeedPostComments")
+  savedFeedPosts   FeedPostSave[]    @relation("UserFeedPostSaves")
+  contacts         Contact[]         @relation("ContactOwner")
+  contactOf        Contact[]         @relation("ContactUser")
+  blockedBy        Block[]           @relation("BlockedUser")
+  blockedUsers     Block[]           @relation("BlockingUser")
+  contentAnalyses  ContentAnalysis[]
+  moderationReviews ModerationReviewQueue[] @relation("ModerationReviewQueueUser")
+  assignedReviews  ModerationReviewQueue[] @relation("ModerationReviewQueueAdmin")
+  moderationActions ModerationAction[]     @relation("ModerationActionUser")
+  targetedActions  ModerationAction[]     @relation("ModerationActionTarget")
+  adminActions     ModerationAction[]     @relation("ModerationActionAdmin")
+  behaviorMetrics  UserBehaviorMetric?
+  coordinatedAbuseAlertsTarget CoordinatedAbuseAlert[] @relation("CoordinatedAbuseAlertTarget")
+  coordinatedAbuseAlertsInvestigator CoordinatedAbuseAlert[] @relation("CoordinatedAbuseAlertInvestigator")
 }
 
 model Profile {
@@ -136,10 +191,49 @@ model Profile {
   longitude     Float?
   interests     String[]
   verifiedBadge Boolean  @default(false)
-  isPrivate     Boolean   @default(false)
+  isPrivate     Boolean  @default(false)
+  privacyMode   PrivacyMode @default(PUBLIC)
+  profileImageUrl String?
   lastActiveAt  DateTime @default(now())
+  updatedAt     DateTime @updatedAt
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+}
+
+model Contact {
+  id              String   @id @default(uuid())
+  userId          String
+  contactUserId   String?
+  contactPhoneNumber String?
+  contactPhoneNumberHash String?
+  displayName     String?
+  isFavorite      Boolean  @default(false)
+  blockedAt       DateTime?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  user            User     @relation("ContactOwner", fields: [userId], references: [id], onDelete: Cascade)
+  contactUser     User?    @relation("ContactUser", fields: [contactUserId], references: [id], onDelete: SetNull)
+
+  @@unique([userId, contactUserId])
+  @@index([userId, createdAt])
+  @@index([contactPhoneNumberHash])
+}
+
+model Block {
+  id              String   @id @default(uuid())
+  blockingUserId  String
+  blockedUserId   String
+  reason          String?
+  createdAt       DateTime @default(now())
+
+  blockingUser    User     @relation("BlockingUser", fields: [blockingUserId], references: [id], onDelete: Cascade)
+  blockedUser     User     @relation("BlockedUser", fields: [blockedUserId], references: [id], onDelete: Cascade)
+
+  @@unique([blockingUserId, blockedUserId])
+  @@index([blockedUserId])
 }
 
 model Photo {
@@ -271,8 +365,22 @@ model FeedPost {
   author     User              @relation("UserFeedPosts", fields: [authorId], references: [id], onDelete: Cascade)
   likes      FeedPostLike[]
   comments   FeedPostComment[]
+  saves      FeedPostSave[]
 
   @@index([createdAt])
+}
+
+model FeedPostSave {
+  id        String   @id @default(uuid())
+  postId    String
+  userId    String
+  createdAt DateTime @default(now())
+
+  post FeedPost @relation(fields: [postId], references: [id], onDelete: Cascade)
+  user User     @relation("UserFeedPostSaves", fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([postId, userId])
+  @@index([userId, createdAt])
 }
 
 model FeedPostLike {
@@ -365,15 +473,21 @@ model AuditLog {
 }
 
 model Chat {
-  id        String       @id @default(cuid())
-  kind      ChatKind
-  title     String?
-  avatarUrl String?
-  createdAt DateTime     @default(now())
-  updatedAt DateTime     @updatedAt
+  id            String       @id @default(cuid())
+  kind          ChatKind
+  isChannel     Boolean      @default(false)
+  title         String?
+  description   String?
+  avatarUrl     String?
+  creatorId     String?
+  subscriberCount Int        @default(0)
+  pinnedMessageId String?
+  isPublic      Boolean      @default(false)
+  createdAt     DateTime     @default(now())
+  updatedAt     DateTime     @updatedAt
 
-  members   ChatMember[]
-  messages  ChatMessage[]
+  members       ChatMember[]
+  messages      ChatMessage[]
 }
 
 model ChatMember {
@@ -394,23 +508,29 @@ model ChatMember {
 
 model ChatMessage {
   id          String               @id @default(cuid())
-  chatId       String
-  senderId     String
-  type         MessageType         @default(TEXT)
-  text         String?
-  mediaUrl     String?
-  fileName     String?
-  durationSec  Int?
-  editedAt     DateTime?
-  deletedAt    DateTime?
-  createdAt    DateTime            @default(now())
+  chatId      String
+  senderId    String
+  replyToId   String?
+  type        MessageType         @default(TEXT)
+  text        String?
+  mediaUrl    String?
+  fileName    String?
+  durationSec Int?
+  status      MessageStatus       @default(SENT)
+  editedAt    DateTime?
+  deletedAt   DateTime?
+  createdAt   DateTime            @default(now())
 
   chat         Chat                 @relation(fields: [chatId], references: [id], onDelete: Cascade)
   sender       User                 @relation("ChatMessageSender", fields: [senderId], references: [id], onDelete: Cascade)
+  replyTo      ChatMessage?         @relation("ChatMessageReply", fields: [replyToId], references: [id], onDelete: SetNull)
+  replies      ChatMessage[]        @relation("ChatMessageReply")
   receipts     ChatMessageReceipt[]
   reactions    ChatReaction[]
 
   @@index([chatId, createdAt])
+  @@index([status])
+  @@index([replyToId])
 }
 
 model ChatMessageReceipt {
@@ -439,4 +559,147 @@ model ChatReaction {
 
   @@unique([messageId, userId, emoji])
   @@index([messageId, createdAt])
+}
+
+// Advanced AI Moderation Models
+
+model ContentAnalysis {
+  id                  String                  @id @default(uuid())
+  contentType         String                  // "message", "profile", "story", "chatMessage"
+  contentId           String
+  userId              String?
+  classification      ContentClassification
+  confidence          Int                     // 0-100
+  severity            ModerationSeverity
+  toxicityScore       Int                     // 0-100
+  spamScore           Int                     // 0-100
+  scamScore           Int                     // 0-100
+  hateSpeechScore     Int                     // 0-100
+  sexualContentScore  Int                     // 0-100
+  violenceScore       Int                     // 0-100
+  reasons             String[]
+  suggestedAction     String                  // "NONE", "WARNING", "HIDE", "RESTRICT", "BAN"
+  requiresHumanReview Boolean                 @default(false)
+  reviewedAt          DateTime?
+  reviewedBy          String?
+  createdAt           DateTime                @default(now())
+
+  user                User?                   @relation(fields: [userId], references: [id], onDelete: SetNull)
+  reviewQueue         ModerationReviewQueue?
+
+  @@index([contentType, contentId])
+  @@index([userId, createdAt])
+  @@index([severity, createdAt])
+  @@index([requiresHumanReview])
+  @@index([classification])
+}
+
+model ModerationReviewQueue {
+  id                  String                  @id @default(uuid())
+  contentAnalysisId   String                  @unique
+  userId              String?
+  contentType         String
+  contentId           String
+  status              ReviewStatus            @default(PENDING)
+  priority            Int                     @default(0)      // 0=low, 1=medium, 2=high, 3=critical
+  assignedTo          String?                 // admin userId
+  notes               String?
+  actionTaken         String?
+  createdAt           DateTime                @default(now())
+  assignedAt          DateTime?
+  resolvedAt          DateTime?
+
+  contentAnalysis     ContentAnalysis         @relation(fields: [contentAnalysisId], references: [id], onDelete: Cascade)
+  user                User?                   @relation("ModerationReviewQueueUser", fields: [userId], references: [id], onDelete: SetNull)
+  assignedAdmin       User?                   @relation("ModerationReviewQueueAdmin", fields: [assignedTo], references: [id], onDelete: SetNull)
+
+  @@index([status, createdAt])
+  @@index([priority, status])
+  @@index([assignedTo])
+  @@index([userId])
+}
+
+model ModerationAction {
+  id                  String                  @id @default(uuid())
+  userId              String
+  targetUserId        String
+  actionType          String                  // "WARNING", "HIDE_CONTENT", "RESTRICT", "SUSPEND", "BAN"
+  reason              String
+  severity            ModerationSeverity
+  duration            Int?                    // in days, null for permanent
+  contentAnalysisId   String?
+  metadata            Json?
+  createdBy           String                  // admin userId
+  createdAt           DateTime                @default(now())
+  expiresAt           DateTime?
+
+  user                User                    @relation("ModerationActionUser", fields: [userId], references: [id], onDelete: Cascade)
+  targetUser          User                    @relation("ModerationActionTarget", fields: [targetUserId], references: [id], onDelete: Cascade)
+  createdByAdmin      User                    @relation("ModerationActionAdmin", fields: [createdBy], references: [id], onDelete: Cascade)
+
+  @@index([userId, createdAt])
+  @@index([targetUserId, createdAt])
+  @@index([actionType])
+  @@index([expiresAt])
+}
+
+model UserBehaviorMetric {
+  id                  String                  @id @default(uuid())
+  userId              String                  @unique
+  messagesLast24h     Int                     @default(0)
+  messagesLastWeek    Int                     @default(0)
+  chatMessages24h     Int                     @default(0)
+  chatMessagesWeek    Int                     @default(0)
+  reportsReceived     Int                     @default(0)
+  reportsReceivedMonth Int                    @default(0)
+  spamBlocks          Int                     @default(0)
+  behaviorRiskScore   Int                     @default(0)      // 0-100
+  flagsData           Json                    // JSON object with flags
+  lastAnalyzedAt      DateTime                @default(now())
+  updatedAt           DateTime                @updatedAt
+
+  user                User                    @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([behaviorRiskScore, updatedAt])
+  @@index([userId])
+}
+
+model ModerationMetrics {
+  id                  String                  @id @default(uuid())
+  date                DateTime                @unique           // Day snapshot
+  totalContentAnalyzed Int                    @default(0)
+  toxicDetected       Int                     @default(0)
+  hateSpeechDetected  Int                     @default(0)
+  spamDetected        Int                     @default(0)
+  scamDetected        Int                     @default(0)
+  sexualContentDetected Int                  @default(0)
+  actionsApproved     Int                     @default(0)
+  actionsRejected     Int                     @default(0)
+  averageReviewTime   Int                     @default(0)        // in seconds
+  autoActionsTaken    Int                     @default(0)
+  createdAt           DateTime                @default(now())
+
+  @@index([date])
+}
+
+model CoordinatedAbuseAlert {
+  id                  String                  @id @default(uuid())
+  targetUserId        String
+  targetUserPhone     String?
+  reportCount         Int
+  uniqueReportersCount Int
+  pattern             String                  // reason pattern
+  confidence          Int                     // 0-100
+  status              ReviewStatus            @default(PENDING)
+  investigatedBy      String?
+  notes               String?
+  detectedAt          DateTime                @default(now())
+  resolvedAt          DateTime?
+
+  targetUser          User                    @relation("CoordinatedAbuseAlertTarget", fields: [targetUserId], references: [id], onDelete: Cascade)
+  investigator        User?                   @relation("CoordinatedAbuseAlertInvestigator", fields: [investigatedBy], references: [id], onDelete: SetNull)
+
+  @@index([targetUserId, detectedAt])
+  @@index([confidence, detectedAt])
+  @@index([status])
 }

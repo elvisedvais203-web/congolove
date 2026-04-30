@@ -1,12 +1,13 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { ProfileCard } from "../../components/ProfileCard";
-import { SectionHeader } from "../../components/SectionHeader";
-import api from "../../lib/api";
-import { AuthGuard } from "../../components/AuthGuard";
-import { fetchCsrfToken } from "../../services/security";
-import { getCompatibility } from "../../services/ai";
+import { useEffect, useMemo, useState } from "react";
+import { ProfileCard } from "../../components/nextalkprofilecard";
+import { SectionHeader } from "../../components/nextalksectionheader";
+import api from "../../lib/nextalkapi";
+import { AuthGuard } from "../../components/nextalkauthguard";
+import { fetchCsrfToken } from "../../services/nextalksecurity";
+import { getCompatibility } from "../../services/nextalkai";
+import { getFeed } from "../../services/nextalksocial";
 
 export default function DiscoverPage() {
   const [items, setItems] = useState<any[]>([]);
@@ -16,6 +17,8 @@ export default function DiscoverPage() {
   const [ageFilter, setAgeFilter] = useState<[number, number]>([24, 38]);
   const [distanceFilter, setDistanceFilter] = useState(50);
   const [intentFilter, setIntentFilter] = useState<"TOUS" | "SERIOUS" | "MARRIAGE" | "FRIENDSHIP" | "FUN">("TOUS");
+  const [explorePosts, setExplorePosts] = useState<any[]>([]);
+  const [loadingExplore, setLoadingExplore] = useState(true);
 
   useEffect(() => {
     api
@@ -23,6 +26,18 @@ export default function DiscoverPage() {
       .then((res) => setItems(res.data))
       .catch(() => setItems([]));
   }, []);
+
+  useEffect(() => {
+    setLoadingExplore(true);
+    getFeed(40)
+      .then((rows) => setExplorePosts((rows ?? []).filter((post: any) => Boolean(post?.mediaUrl))))
+      .catch(() => setExplorePosts([]));
+    setTimeout(() => setLoadingExplore(false), 350);
+  }, []);
+
+  const exploreMasonry = useMemo(() => {
+    return explorePosts.map((post, idx) => ({ ...post, tall: idx % 5 === 0 || idx % 7 === 0 }));
+  }, [explorePosts]);
 
   const top = items[0]?.profile;
 
@@ -72,7 +87,7 @@ export default function DiscoverPage() {
   return (
     <AuthGuard>
       <section>
-        <SectionHeader title="Decouverte" subtitle="Swipe intelligent base sur geolocalisation, interets et activite" />
+        <SectionHeader title="Decouverte" />
         <div className="mx-auto mb-4 grid max-w-3xl gap-3 rounded-2xl border border-white/10 bg-black/20 p-4 md:grid-cols-3">
           <div>
             <p className="text-xs uppercase tracking-[0.16em] text-slate-400">Age</p>
@@ -111,6 +126,10 @@ export default function DiscoverPage() {
         </div>
         {top ? (
           <div className="mx-auto max-w-md">
+            <div className="mb-3 flex items-center justify-between rounded-2xl bg-white/5 px-3 py-2 text-xs text-slate-300">
+              <span>Swipe pour découvrir</span>
+              <span>{items.length} profils</span>
+            </div>
             <ProfileCard
               displayName={top.displayName}
               city={top.city}
@@ -165,6 +184,19 @@ export default function DiscoverPage() {
             <p className="mt-2 text-sm text-slate-400">Reviens plus tard ou ajuste tes filtres pour trouver d&apos;autres personnes.</p>
           </div>
         )}
+
+        <div className="mt-10">
+          <SectionHeader title="Explore" />
+          <div className="mt-4 columns-2 gap-3 md:columns-3">
+            {exploreMasonry.map((post) => (
+              <article key={post.id} className={`mb-3 break-inside-avoid overflow-hidden rounded-2xl border border-white/10 bg-white/5 transition hover:border-white/20 hover:shadow-xl ${post.tall ? "md:[&>img]:h-[360px]" : "md:[&>img]:h-[240px]"}`}>
+                <img src={post.mediaUrl} alt="explore-media" loading="lazy" className="h-[220px] w-full object-cover" />
+              </article>
+            ))}
+          </div>
+          {loadingExplore ? <p className="mt-3 text-sm text-slate-400">Chargement d&apos;Explore...</p> : null}
+          {!loadingExplore && explorePosts.length === 0 ? <p className="mt-3 text-sm text-slate-400">Aucun média à explorer pour le moment.</p> : null}
+        </div>
       </section>
     </AuthGuard>
   );

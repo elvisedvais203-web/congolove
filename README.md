@@ -1,70 +1,154 @@
-# KongoLove Platform
+# NexTalk Platform
 
-Plateforme de rencontre mobile-first pour la RDC avec modele freemium, paiement Mobile Money et messagerie temps reel.
+NexTalk is a next-generation global communication super-app combining WhatsApp-style private messaging, Instagram-style profiles and stories, Telegram-style groups and channels, with AI-powered features.
+
+Built on: Node.js + Express + Prisma + PostgreSQL + Redis + Socket.io (Backend), Next.js + TailwindCSS + PWA (Frontend)
+
+## Core Features
+- 🔐 Phone number & email login with OTP (Firebase Auth)
+- 👤 Unique username system (@username) with profile discovery
+- 💬 Real-time 1-to-1 messaging (WhatsApp-like)
+- 📱 Stories system with 24h expiry (Instagram-like)
+- 👥 Groups & Channels with admin roles (Telegram-like)
+- 🤖 AI-powered matching and conversation assistance
+- 🔒 Privacy modes (Public / Private / Semi-Private)
+- 📞 Contact management with import and sync
+- 🚫 User blocking and moderation system
+- 💳 Freemium model with Mobile Money payments
+- 🛡️ Security: CSRF protection, rate limiting, audit logs
+- 🌙 Dark mode + Light mode with responsive design
+
+## Architecture
+- **Backend**: Node.js + Express + TypeScript + Prisma ORM
+- **Database**: PostgreSQL
+- **Real-time**: Socket.io for messaging and presence
+- **Cache**: Redis for sessions and performance
+- **Frontend**: Next.js 16 + React 19 + TailwindCSS
+- **Storage**: Cloudinary for media
+- **Auth**: Firebase Authentication
+- **Payments**: Mobile Money provider strategy pattern
 
 ## Stack
 - Backend: Node.js + Express + Prisma + PostgreSQL + Redis + Socket.io
 - Frontend: Next.js + TailwindCSS + PWA
-- Media: Cloudinary ou S3/CDN
-- Paiements: architecture Strategy pour Airtel, Orange, M-Pesa, Africell, AfriMoney
+- Media: Cloudinary or S3/CDN
+- Payments: architecture Strategy for Airtel, Orange, M-Pesa, Africell, AfriMoney
 
-## Fonctionnalites
-- Auth email/telephone + OTP (mock ready)
-- Connexion normalisee sur numero RDC (+243)
-- JWT access/refresh
-- Swipe like/pass + creation match
-- Chat temps reel texte/image/video
-- Option economie data (user setting)
-- Freemium: limites gratuites + premium illimite
-- Paiement premium sandbox
-- Moderation: signalement + reputation
-- Admin stats
-- CSRF token pour actions sensibles
-- Audit logs persistants (table audit_logs)
-- Detection anti-spam chat (flood, duplication, liens)
+## Key Functionalities
+- Phone & email authentication with OTP
+- Username-based user discovery and search
+- Real-time 1-to-1 and group messaging
+- Privacy controls (Public/Private/Semi-Private profiles)
+- Contact management with import and sync
+- User blocking and reporting system
+- Stories with viewer tracking and privacy
+- Channels and broadcast groups
+- Message status tracking (Sent/Delivered/Seen)
+- AI-powered user matching and suggestions
+- Data saver mode option
+- Invisible mode for privacy
+- Freemium subscription model
+- Mobile Money payments (Airtel, Orange, M-Pesa, etc.)
+- Moderation: reporting, reputation system
+- Admin stats dashboard
+- CSRF token for sensitive actions
+- Persistent audit logs
+- Anti-spam chat detection
+- Push notifications
 
-## Superadmin bootstrap
-- Definir `SUPERADMIN_EMAIL`, `SUPERADMIN_PHONE`, `SUPERADMIN_PASSWORD` dans `apps/backend/.env`
-- Executer `npm run seed --workspace @kongo-love/backend` pour creer/mettre a jour le compte `SUPERADMIN`
+## Superadmin Bootstrap
+- Define `SUPERADMIN_EMAIL`, `SUPERADMIN_PHONE`, `SUPERADMIN_PASSWORD` in `apps/backend/.env`
+- Execute `npm run seed --workspace @nextalk/backend` to create/update the superadmin account
 
-## Structure
-- apps/backend: API, sockets, services metier
-- apps/frontend: interface Next.js mobile-first
-- db/schema.sql: schema SQL brut
-- docs/API.md: endpoints
-- docs/DEPLOYMENT.md: guide production
+## Project Structure
+- `apps/backend` - REST API, WebSockets, business logic
+- `apps/frontend` - Next.js PWA interface
+- `packages/shared` - Shared types and utilities
+- `db/` - Database schema and scripts
+- `docs/` - API documentation and deployment guides
 
-## Demarrage local
-1. Copier .env.example vers .env (root + apps).
-2. Installer dependances:
-   - npm install
-3. Backend en mode local mock (sans DB obligatoire):
-   - cd apps/backend
-   - npm start
-4. Frontend:
-   - cd ../../
-   - npm run dev:frontend
+## Getting Started
 
-Option base de donnees reelle:
-5. Lancer infrastructure locale:
-   - docker compose up -d
-6. Generer Prisma client:
-   - npm run prisma:generate --workspace @kongo-love/backend
-7. Migrer DB et seed:
-   - npm run prisma:migrate --workspace @kongo-love/backend
-   - npm run seed --workspace @kongo-love/backend
-8. Lancer apps:
-   - npm run dev
+### Local Development (Mock Mode)
+```bash
+# 1. Copy environment files
+cp .env.example .env
+cp apps/backend/.env.example apps/backend/.env
+cp apps/frontend/.env.example apps/frontend/.env
 
-7. Smoke test securite (CSRF + mutation sensible):
-   - npm run test:security:smoke --workspace @kongo-love/backend
+# 2. Install dependencies
+npm install
 
-Frontend: http://localhost:3000
-Backend: http://localhost:4000/api/health
+# 3. Run in mock mode (no database required)
+npm run dev
 
-## Notes production
-- Ajouter vrai fournisseur OTP SMS local
-- Brancher APIs officielles Mobile Money
-- Ajouter pipeline CI/CD (tests + security scan + deploy)
-- Activer moderation media IA en asynchrone
-- Cote frontend, appeler /api/security/csrf-token puis envoyer x-csrf-token sur toutes les mutations API
+# Backend: http://localhost:4000/api/health
+# Frontend: http://localhost:3000
+```
+
+### Full Setup with Database
+```bash
+# 1. Copy environment files and configure database
+cp .env.example .env
+cp apps/backend/.env.example apps/backend/.env
+
+# 2. Start infrastructure (Docker)
+docker-compose up -d
+
+# 3. Install dependencies
+npm install
+
+# 4. Setup database
+npm run prisma:generate --workspace @nextalk/backend
+npm run prisma:migrate --workspace @nextalk/backend
+npm run seed --workspace @nextalk/backend
+
+# 5. Run applications
+npm run dev
+
+# 6. (Optional) Run security smoke tests
+npm run test:security:smoke --workspace @nextalk/backend
+```
+
+## Production Deployment
+
+See [DEPLOYMENT.md](docs/DEPLOYMENT.md) for:
+- Backend deployment to Render
+- Frontend deployment to Vercel
+- Database configuration (Neon, Supabase, or RDS)
+- CDN and media storage setup
+- SSL/TLS and DNS configuration
+
+## API Documentation
+See [API.md](docs/API.md) for complete REST API endpoints
+
+## Product Vision
+NexTalk enables users to:
+- Chat privately without phone number requirements
+- Share stories and updates
+- Discover new people through usernames
+- Control profile privacy settings
+- Join groups and channels
+- Get AI assistance for communication
+- Manage contacts and block unwanted interactions
+
+All while maintaining security, privacy, and high performance at scale.
+
+## Notes for Production
+- Integrate real OTP SMS provider
+- Connect official Mobile Money APIs
+- Set up CI/CD pipeline with security scanning
+- Enable async AI moderation for media
+- Frontend: send CSRF tokens on API mutations
+- Configure email notifications service
+- Set up error tracking (Sentry, etc.)
+- Implement analytics and monitoring
+- Add API rate limiting per user tier
+- Configure backup strategy
+
+## License
+Proprietary - NexTalk Platform 2025
+
+---
+
+**Built with ❤️ for global communication**

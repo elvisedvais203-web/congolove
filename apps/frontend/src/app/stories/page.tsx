@@ -1,12 +1,15 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import { AuthGuard } from "../../components/AuthGuard";
-import { createStory, getStoryFeed, viewStory } from "../../services/stories";
-import { fetchCsrfToken } from "../../services/security";
-import { getStoredUser } from "../../lib/session";
+import { useRouter } from "next/navigation";
+import { AuthGuard } from "../../components/nextalkauthguard";
+import { createStory, getStoryFeed, viewStory } from "../../services/nextalkstories";
+import { fetchCsrfToken } from "../../services/nextalksecurity";
+import { getStoredUser } from "../../lib/nextalksession";
+import { broadcastToChannel, createChannel, getConversations, subscribeToChannel, type Conversation } from "../../services/nextalkchat";
 import Image from "next/image";
-import api from "../../lib/api";
+import api from "../../lib/nextalkapi";
+import { SectionHeader } from "../../components/nextalksectionheader";
 
 type Story = {
   id: string;
@@ -29,6 +32,7 @@ type StoryGroup = {
 const DURATION = 5000;
 
 export default function StoriesPage() {
+  const router = useRouter();
   const [groups, setGroups] = useState<StoryGroup[]>([]);
   const [loading, setLoading] = useState(true);
   const [viewer, setViewer] = useState<{ groupIdx: number; storyIdx: number } | null>(null);
@@ -37,7 +41,18 @@ export default function StoriesPage() {
   const [caption, setCaption] = useState("");
   const [storyVisibility, setStoryVisibility] = useState<"PUBLIC" | "FOLLOWERS">("PUBLIC");
   const [publishing, setPublishing] = useState(false);
+  const [publishProgress, setPublishProgress] = useState(0);
   const [publishStatus, setPublishStatus] = useState("");
+  const [composeOpen, setComposeOpen] = useState(false);
+  const [composeFile, setComposeFile] = useState<File | null>(null);
+  const [composePreviewUrl, setComposePreviewUrl] = useState<string>("");
+  const [channels, setChannels] = useState<Conversation[]>([]);
+  const [channelTitle, setChannelTitle] = useState("");
+  const [channelDescription, setChannelDescription] = useState("");
+  const [channelMessage, setChannelMessage] = useState("");
+  const [selectedChannelId, setSelectedChannelId] = useState<string>("");
+  const [createChannelModalOpen, setCreateChannelModalOpen] = useState(false);
+  const [broadcastModalOpen, setBroadcastModalOpen] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
   const progressRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const videoRef = useRef<HTMLVideoElement>(null);
@@ -72,6 +87,18 @@ export default function StoriesPage() {
   }, [me?.id]);
 
   useEffect(() => { loadFeed(); }, [loadFeed]);
+
+  useEffect(() => {
+    getConversations({ archived: false })
+      .then((rows) => {
+        const list = rows.filter((conversation) => conversation.kind === "GROUP");
+        setChannels(list);
+        if (list[0]) {
+          setSelectedChannelId(list[0].id);
+        }
+      })
+      .catch(() => setChannels([]));
+  }, []);
 
   const stopProgress = () => {
     if (progressRef.current) clearInterval(progressRef.current);
@@ -128,8 +155,8 @@ export default function StoriesPage() {
     try {
       setPublishing(true);
       setPublishStatus("Envoi en cours...");
-      if (!["image/jpeg", "image/png", "image/webp", "video/mp4", "video/quicktime"].includes(file.type)) {
-        setPublishStatus("Format non supporte. Utilisez JPEG, PNG, WEBP ou MP4.");
+      if (!["image/jpeg", "image/png", "image/webp", "image/heic", "video/mp4", "video/quicktime", "video/webm"].includes(file.type)) {
+        setPublishStatus("Format non supporte. Utilisez JPEG, PNG, WEBP, HEIC, MP4, MOV ou WEBM.");
         return;
       }
       const formData = new FormData();
@@ -141,6 +168,12 @@ export default function StoriesPage() {
           "Content-Type": "multipart/form-data",
           "x-csrf-token": csrf
         },
+        onUploadProgress: (evt) => {
+          const total = evt.total ?? 0;
+          if (total > 0) {
+            setPublishProgress(Math.round((evt.loaded / total) * 100));
+          }
+        }
       });
       await createStory({
         mediaUrl: upload.url ?? upload.secure_url ?? upload.mediaUrl,
@@ -149,18 +182,83 @@ export default function StoriesPage() {
         visibility: storyVisibility
       }, csrf);
       setCaption("");
-      setPublishStatus("Story publiee !");
+      setPublishStatus("Story publiee.");
+      setPublishProgress(0);
       await loadFeed();
-    } catch {
-      setPublishStatus("Echec de publication.");
+    } catch (error: any) {
+      const message = String(error?.response?.data?.message ?? "");
+      setPublishStatus(message ? `Échec de publication: ${message}` : "Échec de publication: serveur indisponible.");
     } finally {
       setPublishing(false);
+      setPublishProgress(0);
     }
   };
 
   const currentGroup = viewer ? groups[viewer.groupIdx] : null;
   const currentStory = currentGroup ? currentGroup.stories[viewer!.storyIdx] : null;
   const isVideo = currentStory?.mediaType === "VIDEO";
+
+  const downloadStory = (story: Story) => {
+    const anchor = document.createElement("a");
+    anchor.href = story.mediaUrl;
+    anchor.download = `nextalk-story-${story.id}.${story.mediaType === "VIDEO" ? "mp4" : "jpg"}`;
+    anchor.click();
+  };
+
+  const createChannelNow = async () => {
+    if (!channelTitle.trim()) {
+      return null;
+    }
+    try {
+      const csrf = await fetchCsrfToken();
+      const created = await createChannel(
+        { title: channelTitle.trim(), description: channelDescription.trim() || undefined, isPublic: true },
+        csrf
+      );
+      await subscribeToChannel(created.id, csrf);
+      setChannels((prev) => [created, ...prev]);
+      setSelectedChannelId(created.id);
+      setChannelTitle("");
+      setChannelDescription("");
+      setPublishStatus("Canal cree avec succes.");
+      return created.id;
+    } catch {
+      setPublishStatus("Creation du canal impossible pour le moment.");
+      return null;
+    }
+  };
+
+  const subscribeNow = async (channelId: string) => {
+    try {
+      const csrf = await fetchCsrfToken();
+      await subscribeToChannel(channelId, csrf);
+      setPublishStatus("Abonnement au canal effectue.");
+    } catch {
+      setPublishStatus("Echec abonnement canal.");
+    }
+  };
+
+  const sendBroadcast = async () => {
+    if (!selectedChannelId || !channelMessage.trim()) {
+      return;
+    }
+    try {
+      const csrf = await fetchCsrfToken();
+      await broadcastToChannel(selectedChannelId, { text: channelMessage.trim(), type: "TEXT" }, csrf);
+      setChannelMessage("");
+      setPublishStatus("Message diffuse dans le canal.");
+    } catch {
+      setPublishStatus("Diffusion canal indisponible.");
+    }
+  };
+
+  useEffect(() => {
+    return () => {
+      if (composePreviewUrl) {
+        URL.revokeObjectURL(composePreviewUrl);
+      }
+    };
+  }, [composePreviewUrl]);
 
   return (
     <AuthGuard>
@@ -242,11 +340,24 @@ export default function StoriesPage() {
       )}
 
       <section className="pb-20 animate-fade-in">
+        <SectionHeader
+          title="Stories et canaux"
+          accent="violet"
+        />
         {/* Barre stories */}
         <div className="flex gap-4 overflow-x-auto pb-4 pt-2 scrollbar-hide">
           {/* Ajouter une story */}
           <button
-            onClick={() => fileRef.current?.click()}
+            onClick={() => {
+              setComposeOpen(true);
+              setPublishStatus("");
+              setPublishProgress(0);
+              setComposeFile(null);
+              if (composePreviewUrl) {
+                URL.revokeObjectURL(composePreviewUrl);
+              }
+              setComposePreviewUrl("");
+            }}
             className="flex min-w-[72px] flex-col items-center gap-2 text-xs text-slate-300"
             disabled={publishing}
           >
@@ -259,7 +370,24 @@ export default function StoriesPage() {
             </span>
             <span className="text-neoblue font-medium">Ma story</span>
           </button>
-          <input ref={fileRef} type="file" accept="image/*,video/*" className="hidden" aria-label="Choisir photo ou video" title="Choisir photo ou video" onChange={(e) => { const f = e.target.files?.[0]; if (f) publishStory(f); e.target.value = ""; }} />
+          <input
+            ref={fileRef}
+            type="file"
+            accept="image/*,video/*"
+            className="hidden"
+            aria-label="Choisir photo ou video"
+            title="Choisir photo ou video"
+            onChange={(e) => {
+              const f = e.target.files?.[0] ?? null;
+              e.target.value = "";
+              if (!f) return;
+              setComposeFile(f);
+              if (composePreviewUrl) {
+                URL.revokeObjectURL(composePreviewUrl);
+              }
+              setComposePreviewUrl(URL.createObjectURL(f));
+            }}
+          />
 
           {loading && [1,2,3,4].map((i) => (
             <div key={i} className="flex min-w-[72px] flex-col items-center gap-2">
@@ -285,48 +413,118 @@ export default function StoriesPage() {
         </div>
 
         {publishStatus && (
-          <div className={`mb-4 rounded-2xl px-4 py-3 text-sm font-medium ${publishStatus.includes("!") ? "bg-green-500/10 border border-green-500/30 text-green-400" : "bg-[#ff4d4f]/10 border border-[#ff4d4f]/30 text-[#ff4d4f]"}`}>
+          <div className={`mb-4 rounded-2xl px-4 py-3 text-sm font-medium ${publishStatus.includes("publiee") || publishStatus.includes("succes") ? "bg-green-500/10 border border-green-500/30 text-green-400" : "bg-[#ff4d4f]/10 border border-[#ff4d4f]/30 text-[#ff4d4f]"}`}>
             {publishStatus}
           </div>
         )}
-
-        {/* Legende optionnelle */}
-        <div className="glass rounded-2xl p-4 mb-6">
-          <p className="text-xs font-semibold uppercase tracking-widest text-slate-400 mb-2">Legende pour ta prochaine story</p>
-          <input
-            value={caption}
-            onChange={(e) => setCaption(e.target.value)}
-            className="w-full rounded-xl border border-white/20 bg-black/20 px-4 py-2.5 text-sm text-white placeholder:text-slate-500"
-            placeholder="Ajoute une legende..."
-          />
-          <div className="mt-3 flex gap-2">
-            <button
-              onClick={() => setStoryVisibility("PUBLIC")}
-              className={`rounded-xl px-3 py-1.5 text-xs ${storyVisibility === "PUBLIC" ? "bg-neoblue/25 text-neoblue" : "bg-white/10 text-slate-300"}`}
-            >
-              Story publique
-            </button>
-            <button
-              onClick={() => setStoryVisibility("FOLLOWERS")}
-              className={`rounded-xl px-3 py-1.5 text-xs ${storyVisibility === "FOLLOWERS" ? "bg-neoblue/25 text-neoblue" : "bg-white/10 text-slate-300"}`}
-            >
-              Abonnes uniquement
-            </button>
-          </div>
-          <p className="mt-2 text-xs text-slate-500">Choisis une photo/video ci-dessus pour publier avec cette legende.</p>
-        </div>
-
-        {/* Grille de toutes les stories */}
-        {!loading && groups.length === 0 && (
-          <div className="flex flex-col items-center justify-center py-20 text-center">
-            <div className="mb-4 flex h-20 w-20 items-center justify-center rounded-full bg-gradient-to-br from-[#ff3cac]/20 to-neoviolet/20 border border-neoviolet/30">
-              <svg viewBox="0 0 24 24" className="h-10 w-10 text-neoviolet" fill="none" stroke="currentColor" strokeWidth="1.5"><rect x="3" y="3" width="18" height="18" rx="4"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="M21 15l-5-5L5 21"/></svg>
+        {publishing && publishProgress > 0 ? (
+          <div className="mb-4 rounded-2xl border border-white/10 bg-black/20 p-3">
+            <div className="h-2 w-full rounded-full bg-white/10">
+              <div className="h-2 rounded-full bg-neoblue transition-all" style={{ width: `${publishProgress}%` }} />
             </div>
-            <p className="text-lg font-semibold text-white">Aucune story pour le moment</p>
-            <p className="mt-2 text-sm text-slate-400">Sois le premier a partager un moment.</p>
-            <button onClick={() => fileRef.current?.click()} className="btn-neon mt-6 rounded-2xl px-6 py-3 text-sm font-bold">+ Publier une story</button>
+            <p className="mt-1 text-xs text-slate-300">Upload story: {publishProgress}%</p>
           </div>
-        )}
+        ) : null}
+
+        {composeOpen ? (
+          <div className="mb-6 glass rounded-2xl p-4">
+            <div className="flex items-center justify-between gap-3">
+              <div>
+                <p className="text-xs font-semibold uppercase tracking-widest text-slate-400">Publication story</p>
+                <p className="mt-1 text-sm text-slate-300">Ajoute une légende, choisis la visibilité, puis sélectionne une photo/vidéo.</p>
+              </div>
+              <button
+                onClick={() => {
+                  setComposeOpen(false);
+                  setComposeFile(null);
+                  if (composePreviewUrl) {
+                    URL.revokeObjectURL(composePreviewUrl);
+                  }
+                  setComposePreviewUrl("");
+                }}
+                className="wa-pill px-3 py-1.5 text-xs"
+                type="button"
+              >
+                Fermer
+              </button>
+            </div>
+
+            <div className="mt-3 grid gap-3 md:grid-cols-2">
+              <div className="md:col-span-2">
+                <p className="text-xs font-semibold uppercase tracking-widest text-slate-400 mb-2">Légende</p>
+                <input
+                  value={caption}
+                  onChange={(e) => setCaption(e.target.value)}
+                  className="w-full rounded-xl border border-white/20 bg-black/20 px-4 py-2.5 text-sm text-white placeholder:text-slate-500"
+                  placeholder="Ajoute une légende..."
+                  disabled={publishing}
+                />
+              </div>
+              <div>
+                <p className="text-xs font-semibold uppercase tracking-widest text-slate-400 mb-2">Visibilité</p>
+                <div className="flex gap-2">
+                  <button
+                    onClick={() => setStoryVisibility("PUBLIC")}
+                    className={`rounded-xl px-3 py-2 text-xs ${storyVisibility === "PUBLIC" ? "bg-neoblue/25 text-neoblue" : "bg-white/10 text-slate-300"}`}
+                    type="button"
+                    disabled={publishing}
+                  >
+                    Publique
+                  </button>
+                  <button
+                    onClick={() => setStoryVisibility("FOLLOWERS")}
+                    className={`rounded-xl px-3 py-2 text-xs ${storyVisibility === "FOLLOWERS" ? "bg-neoblue/25 text-neoblue" : "bg-white/10 text-slate-300"}`}
+                    type="button"
+                    disabled={publishing}
+                  >
+                    Abonnés
+                  </button>
+                </div>
+              </div>
+              <div className="flex items-end justify-end gap-2">
+                <button
+                  onClick={() => fileRef.current?.click()}
+                  className="btn-outline-neon rounded-xl px-4 py-2 text-sm disabled:opacity-60"
+                  type="button"
+                  disabled={publishing}
+                >
+                  Choisir photo/vidéo
+                </button>
+                <button
+                  onClick={async () => {
+                    if (!composeFile || publishing) return;
+                    await publishStory(composeFile);
+                    if (String(publishStatus).includes("publiee")) {
+                      setComposeOpen(false);
+                      setComposeFile(null);
+                      if (composePreviewUrl) {
+                        URL.revokeObjectURL(composePreviewUrl);
+                      }
+                      setComposePreviewUrl("");
+                    }
+                  }}
+                  className="btn-neon rounded-xl px-4 py-2 text-sm disabled:opacity-60"
+                  type="button"
+                  disabled={!composeFile || publishing}
+                >
+                  {publishing ? "Publication..." : "Publier"}
+                </button>
+              </div>
+            </div>
+
+            {composePreviewUrl ? (
+              <div className="mt-3 overflow-hidden rounded-2xl border border-white/10 bg-black/30">
+                {composeFile?.type.startsWith("video/") ? (
+                  <video src={composePreviewUrl} controls className="max-h-[520px] w-full object-cover" />
+                ) : (
+                  <img src={composePreviewUrl} alt="Prévisualisation story" className="max-h-[520px] w-full object-cover" />
+                )}
+              </div>
+            ) : (
+              <p className="mt-3 text-xs text-slate-500">Appuie sur “Choisir photo/vidéo” (bouton +) pour sélectionner le fichier.</p>
+            )}
+          </div>
+        ) : null}
 
         {!loading && groups.length > 0 && (
           <div>
@@ -361,12 +559,127 @@ export default function StoriesPage() {
                       <p className="text-xs font-semibold text-white truncate">{g.isMe ? "Moi" : g.displayName}</p>
                       {s.caption && <p className="text-xs text-white/70 truncate mt-0.5">{s.caption}</p>}
                     </div>
+                    <button
+                      onClick={(event) => {
+                        event.stopPropagation();
+                        downloadStory(s);
+                      }}
+                      className="absolute right-2 bottom-2 z-10 rounded-full bg-black/60 px-2 py-1 text-[10px] text-white"
+                    >
+                      Download
+                    </button>
                   </button>
                 ))
               )}
             </div>
           </div>
         )}
+
+        <div className="mt-8 grid gap-4 lg:grid-cols-2">
+          <div className="glass rounded-3xl p-4">
+            <p className="text-xs uppercase tracking-[0.16em] text-[#8ef0b9]">Canaux / Chaines</p>
+            <h3 className="mt-1 text-lg font-semibold text-white">Créer un canal</h3>
+            <p className="mt-2 text-sm text-slate-400">Ouvre la fenêtre de création pour ajouter un canal ou un groupe.</p>
+            <button
+              onClick={() => setCreateChannelModalOpen(true)}
+              className="btn-neon mt-3 rounded-xl px-4 py-2 text-sm"
+              type="button"
+            >
+              Creer un canal
+            </button>
+          </div>
+
+          <div className="glass rounded-3xl p-4">
+            <p className="text-xs uppercase tracking-[0.16em] text-[#8ef0b9]">Diffusion canal</p>
+            <h3 className="mt-1 text-lg font-semibold text-white">Publier dans un canal</h3>
+            <p className="mt-2 text-sm text-slate-400">Ouvre la fenêtre de diffusion pour publier dans un canal existant.</p>
+            <button
+              onClick={() => setBroadcastModalOpen(true)}
+              className="btn-neon mt-3 rounded-xl px-4 py-2 text-sm"
+              type="button"
+            >
+              Publier
+            </button>
+          </div>
+        </div>
+
+        {createChannelModalOpen ? (
+          <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/60 p-4 md:items-center">
+            <div className="glass w-full max-w-lg rounded-3xl p-4">
+              <div className="mb-3 flex items-center justify-between">
+                <h4 className="text-base font-semibold text-white">Créer un canal</h4>
+                <button onClick={() => setCreateChannelModalOpen(false)} className="wa-pill px-3 py-1 text-xs" type="button">Fermer</button>
+              </div>
+              <input
+                value={channelTitle}
+                onChange={(event) => setChannelTitle(event.target.value)}
+                placeholder="Nom du canal"
+                className="input-neon mt-1 w-full rounded-xl px-3 py-2 text-sm"
+              />
+              <textarea
+                value={channelDescription}
+                onChange={(event) => setChannelDescription(event.target.value)}
+                placeholder="Description"
+                rows={3}
+                className="input-neon mt-2 w-full rounded-xl px-3 py-2 text-sm"
+              />
+              <button
+                onClick={async () => {
+                  const createdId = await createChannelNow();
+                  if (createdId) {
+                    setCreateChannelModalOpen(false);
+                    router.push(`/messages/${createdId}`);
+                  }
+                }}
+                className="btn-neon mt-3 rounded-xl px-4 py-2 text-sm"
+                type="button"
+              >
+                Creer le canal
+              </button>
+            </div>
+          </div>
+        ) : null}
+
+        {broadcastModalOpen ? (
+          <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/60 p-4 md:items-center">
+            <div className="glass w-full max-w-xl rounded-3xl p-4">
+              <div className="mb-3 flex items-center justify-between">
+                <h4 className="text-base font-semibold text-white">Publier dans un canal</h4>
+                <button onClick={() => setBroadcastModalOpen(false)} className="wa-pill px-3 py-1 text-xs" type="button">Fermer</button>
+              </div>
+              <div className="max-h-40 space-y-2 overflow-y-auto">
+                {channels.map((channel) => (
+                  <div key={channel.id} className="flex items-center justify-between rounded-xl border border-white/10 bg-black/20 px-3 py-2">
+                    <button onClick={() => setSelectedChannelId(channel.id)} className="text-left text-sm text-white" type="button">
+                      {channel.title}
+                    </button>
+                    <button onClick={() => void subscribeNow(channel.id)} className="wa-pill px-2 py-1 text-xs" type="button">
+                      Suivre
+                    </button>
+                  </div>
+                ))}
+                {channels.length === 0 ? <p className="text-sm text-slate-400">Aucun canal disponible.</p> : null}
+              </div>
+              <textarea
+                value={channelMessage}
+                onChange={(event) => setChannelMessage(event.target.value)}
+                placeholder="Message a diffuser dans le canal selectionne"
+                rows={3}
+                className="input-neon mt-3 w-full rounded-xl px-3 py-2 text-sm"
+              />
+              <button
+                onClick={async () => {
+                  await sendBroadcast();
+                  setBroadcastModalOpen(false);
+                }}
+                className="btn-neon mt-3 rounded-xl px-4 py-2 text-sm"
+                type="button"
+              >
+                Publier
+              </button>
+            </div>
+          </div>
+        ) : null}
       </section>
     </AuthGuard>
   );

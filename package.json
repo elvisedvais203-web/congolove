@@ -1,5 +1,5 @@
 {
-  "name": "kongo-love-platform",
+  "name": "nextalk-platform",
   "private": true,
   "version": "1.0.0",
   "workspaces": [
@@ -8,15 +8,15 @@
   ],
   "scripts": {
     "dev": "npm-run-all -p dev:backend dev:frontend",
-    "dev:backend": "npm --workspace @kongo-love/backend run dev",
-    "dev:frontend": "npm --workspace @kongo-love/frontend run dev",
+    "dev:backend": "npm --workspace @nextalk/backend run dev",
+    "dev:frontend": "npm --workspace @nextalk/frontend run dev",
     "build": "npm-run-all build:shared build:backend build:frontend",
-    "build:shared": "npm --workspace @kongo-love/shared run build",
-    "build:backend": "npm --workspace @kongo-love/backend run build",
-    "build:frontend": "npm --workspace @kongo-love/frontend run build",
+    "build:shared": "npm --workspace @nextalk/shared run build",
+    "build:backend": "npm --workspace @nextalk/backend run build",
+    "build:frontend": "npm --workspace @nextalk/frontend run build",
     "lint": "npm-run-all lint:backend lint:frontend",
-    "lint:backend": "npm --workspace @kongo-love/backend run lint",
-    "lint:frontend": "npm --workspace @kongo-love/frontend run lint"
+    "lint:backend": "npm --workspace @nextalk/backend run lint",
+    "lint:frontend": "npm --workspace @nextalk/frontend run lint"
   },
   "devDependencies": {
     "npm-run-all": "^4.1.5"

@@ -2,9 +2,9 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { SectionHeader } from "../../components/SectionHeader";
-import { AuthGuard } from "../../components/AuthGuard";
-import { getConversations } from "../../services/chat";
+import { SectionHeader } from "../../components/nextalksectionheader";
+import { AuthGuard } from "../../components/nextalkauthguard";
+import { getConversations } from "../../services/nextalkchat";
 
 type MatchRow = { id: string; title: string; city?: string; online: boolean; };
 
@@ -34,7 +34,7 @@ export default function MatchesPage() {
   return (
     <AuthGuard>
       <section className="space-y-4 animate-fade-in">
-        <SectionHeader title="Mes matchs" subtitle="Vos connexions mutuelles" accent="violet" />
+        <SectionHeader title="Mes matchs" accent="violet" />
 
         {loading && (
           <div className="grid gap-3 md:grid-cols-3">
@@ -74,7 +74,7 @@ export default function MatchesPage() {
                   </div>
                 </div>
                 <div className="mt-4 flex gap-2">
-                  <Link href={`/messages/${match.id}`} className="btn-neon flex-1 rounded-xl py-2 text-sm text-center">Message</Link>
+                  <Link href={`/messages/${match.id}`} className="btn-neon flex-1 rounded-xl py-2 text-sm text-center">Envoyer un message</Link>
                   <Link href={`/profile/${match.id}`} className="btn-outline-neon rounded-xl px-3 py-2 text-sm">Profil</Link>
                 </div>
               </article>
@@ -88,7 +88,7 @@ export default function MatchesPage() {
               <svg viewBox="0 0 24 24" className="h-10 w-10 text-neoviolet" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M4.318 6.318a4.5 4.5 0 0 0 0 6.364L12 20.364l7.682-7.682a4.5 4.5 0 0 0-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 0 0-6.364 0z"/></svg>
             </div>
             <p className="font-heading text-xl text-white mb-1">Aucun match pour le moment</p>
-            <p className="text-sm text-[var(--muted)] mb-5">Swipez des profils pour creer vos premiers matches</p>
+            <p className="text-sm text-[var(--muted)] mb-5">Explorez des profils pour creer vos premiers matchs.</p>
             <Link href="/discover" className="btn-neon rounded-2xl px-6 py-3">Decouvrir des profils</Link>
           </div>
         )}
