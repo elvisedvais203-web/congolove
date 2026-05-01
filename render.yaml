@@ -1,24 +1,22 @@
 services:
   - type: web
-    name: congolove-api
+    name: nextalk-api
     runtime: node
     plan: starter
-    rootDir: .
-    buildCommand: npm install --include=dev && npm run build --workspace @kongo-love/backend
-    startCommand: npm run start --workspace @kongo-love/backend
-    healthCheckPath: /api/health
+    rootDir: apps/backend
+    buildCommand: npm install && npm run build
+    startCommand: npm start
+    healthCheckPath: /health
     envVars:
       - key: NODE_ENV
         value: production
-      - key: API_PORT
-        value: 10000
-      - key: API_BASE_URL
+      - key: PORT
         sync: false
-      - key: CORS_ORIGIN
-        value: "https://app.congolove.com,http://localhost:3000"
       - key: DATABASE_URL
         sync: false
       - key: REDIS_URL
+        sync: false
+      - key: CORS_ORIGIN
         sync: false
       - key: JWT_ACCESS_SECRET
         sync: false
@@ -28,8 +26,8 @@ services:
         value: 15m
       - key: JWT_REFRESH_TTL
         value: 30d
-      - key: DEBUG_ERRORS
-        value: "true"
+      - key: PAYMENT_WEBHOOK_SECRET
+        sync: false
       - key: FIREBASE_PROJECT_ID
         sync: false
       - key: FIREBASE_CLIENT_EMAIL
@@ -38,40 +36,41 @@ services:
         sync: false
       - key: FIREBASE_SERVICE_ACCOUNT_JSON
         sync: false
+      - key: MEDIA_PROVIDER
+        value: cloudinary
       - key: CLOUDINARY_CLOUD_NAME
         sync: false
       - key: CLOUDINARY_API_KEY
         sync: false
       - key: CLOUDINARY_API_SECRET
         sync: false
+      - key: MM_AIRTEL_API_URL
+        sync: false
+      - key: MM_AIRTEL_API_TOKEN
+        sync: false
+      - key: MM_ORANGE_API_URL
+        sync: false
+      - key: MM_ORANGE_API_TOKEN
+        sync: false
+      - key: MM_MPESA_API_URL
+        sync: false
+      - key: MM_MPESA_API_TOKEN
+        sync: false
+      - key: MM_AFRICELL_API_URL
+        sync: false
+      - key: MM_AFRICELL_API_TOKEN
+        sync: false
+      - key: MM_AFRIMONEY_API_URL
+        sync: false
+      - key: MM_AFRIMONEY_API_TOKEN
+        sync: false
+      - key: WEB_PUSH_VAPID_PUBLIC_KEY
+        sync: false
+      - key: WEB_PUSH_VAPID_PRIVATE_KEY
+        sync: false
       - key: SUPERADMIN_EMAIL
         sync: false
       - key: SUPERADMIN_PHONE
         sync: false
       - key: SUPERADMIN_PASSWORD
-        sync: false
-
-  - type: web
-    name: congolove-web
-    runtime: node
-    plan: starter
-    rootDir: .
-    buildCommand: npm install --include=dev && npm run build --workspace @kongo-love/frontend
-    startCommand: npm run start --workspace @kongo-love/frontend
-    envVars:
-      - key: NODE_ENV
-        value: production
-      - key: PORT
-        value: 10000
-      - key: NEXT_PUBLIC_API_URL
-        sync: false
-      - key: NEXT_PUBLIC_SOCKET_URL
-        sync: false
-      - key: NEXT_PUBLIC_FIREBASE_API_KEY
-        sync: false
-      - key: NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN
-        sync: false
-      - key: NEXT_PUBLIC_FIREBASE_PROJECT_ID
-        sync: false
-      - key: NEXT_PUBLIC_FIREBASE_APP_ID
         sync: false

@@ -203,7 +203,7 @@ export async function adminUsers(_req: AuthRequest, res: Response) {
       phone: user.phone,
       role: user.role,
       reputation: user.reputation,
-      displayName: user.profile?.displayName ?? user.phone,
+      displayName: user.profile?.displayName ?? user.phone ?? user.email ?? "Utilisateur",
       city: user.profile?.city ?? null,
       verifiedBadge: user.profile?.verifiedBadge ?? false,
       verificationStatus,

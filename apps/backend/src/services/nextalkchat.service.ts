@@ -101,7 +101,7 @@ function mapConversation(chat: Prisma.ChatGetPayload<{ include: ReturnType<typeo
     memberCount: chat._count.members,
     members: chat.members.map((member) => ({
       id: member.user.id,
-      displayName: member.user.profile?.displayName ?? member.user.phone,
+      displayName: member.user.profile?.displayName ?? member.user.phone ?? member.user.email ?? "Utilisateur",
       city: member.user.profile?.city ?? undefined,
       avatarUrl: member.user.photos[0]?.url ?? null,
       online: Boolean(member.user.profile?.lastActiveAt && member.user.profile.lastActiveAt >= nowMinusOnlineWindow()),
@@ -161,7 +161,7 @@ function mapMessage(
           createdAt: message.replyTo.createdAt,
           sender: {
             id: message.replyTo.sender.id,
-            displayName: message.replyTo.sender.profile?.displayName ?? message.replyTo.sender.phone,
+            displayName: message.replyTo.sender.profile?.displayName ?? message.replyTo.sender.phone ?? message.replyTo.sender.email ?? "Utilisateur",
             avatarUrl: message.replyTo.sender.photos.find((photo) => photo.isPrimary)?.url ?? null
           }
         }
@@ -182,7 +182,7 @@ function mapMessage(
     createdAt: message.createdAt,
     sender: {
       id: message.sender.id,
-      displayName: message.sender.profile?.displayName ?? message.sender.phone,
+      displayName: message.sender.profile?.displayName ?? message.sender.phone ?? message.sender.email ?? "Utilisateur",
       avatarUrl: message.sender.photos.find((photo) => photo.isPrimary)?.url ?? null
     },
     status:

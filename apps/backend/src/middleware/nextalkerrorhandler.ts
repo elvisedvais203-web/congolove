@@ -1,17 +1,22 @@
 import { NextFunction, Request, Response } from "express";
 import { ApiError } from "../utils/nextalkapierror";
+import { logger } from "../utils/nextalklogger";
+import { env } from "../config/nextalkenv";
 
 export function errorHandler(err: Error, _req: Request, res: Response, _next: NextFunction): void {
   if (err instanceof ApiError) {
+    if (err.statusCode >= 500) {
+      logger.error(`API Error: ${err.message}`, { statusCode: err.statusCode });
+    }
     res.status(err.statusCode).json({ message: err.message });
     return;
   }
 
-  console.error("[ERROR]", err.message, err.stack);
+  logger.error("Unhandled error", { message: err.message, stack: err.stack });
 
-  const debugErrors = process.env.DEBUG_ERRORS === "true";
+  const includeDetails = env.nodeEnv === "development";
   res.status(500).json({
     message: "Erreur interne du serveur",
-    ...(debugErrors && { detail: err.message, stack: err.stack })
+    ...(includeDetails && { detail: err.message })
   });
 }

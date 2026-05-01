@@ -84,7 +84,7 @@ export async function listFeedPosts(userId: string, limit: number) {
     createdAt: post.createdAt,
     author: {
       id: post.author.id,
-      displayName: post.author.profile?.displayName ?? post.author.phone,
+      displayName: post.author.profile?.displayName ?? post.author.phone ?? post.author.email ?? "Utilisateur",
       avatarUrl: post.author.photos[0]?.url ?? null
     },
     likesCount: post.likes.length,
@@ -96,7 +96,7 @@ export async function listFeedPosts(userId: string, limit: number) {
       createdAt: comment.createdAt,
       user: {
         id: comment.user.id,
-        displayName: comment.user.profile?.displayName ?? comment.user.phone,
+        displayName: comment.user.profile?.displayName ?? comment.user.phone ?? comment.user.email ?? "Utilisateur",
         avatarUrl: comment.user.photos[0]?.url ?? null
       }
     }))
@@ -191,7 +191,7 @@ export async function listSavedFeedPosts(userId: string, limit: number) {
     createdAt: post.createdAt,
     author: {
       id: post.author.id,
-      displayName: post.author.profile?.displayName ?? post.author.phone,
+      displayName: post.author.profile?.displayName ?? post.author.phone ?? post.author.email ?? "Utilisateur",
       avatarUrl: post.author.photos[0]?.url ?? null
     },
     likesCount: post.likes.length,
@@ -203,7 +203,7 @@ export async function listSavedFeedPosts(userId: string, limit: number) {
       createdAt: comment.createdAt,
       user: {
         id: comment.user.id,
-        displayName: comment.user.profile?.displayName ?? comment.user.phone,
+        displayName: comment.user.profile?.displayName ?? comment.user.phone ?? comment.user.email ?? "Utilisateur",
         avatarUrl: comment.user.photos[0]?.url ?? null
       }
     }))

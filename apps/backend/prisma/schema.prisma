@@ -125,7 +125,7 @@ enum MessageStatus {
 model User {
   id               String        @id @default(uuid())
   email            String?       @unique
-  phone            String        @unique
+  phone            String?       @unique
   username         String?       @unique
   usernameSearchLower String?    @unique
   passwordHash     String
@@ -162,6 +162,7 @@ model User {
   settings         UserSettings?
   loginEvents      LoginEvent[]
   firebaseUid      String?           @unique
+  passwordResetTokens PasswordResetToken[]
   feedPosts        FeedPost[]        @relation("UserFeedPosts")
   feedPostLikes    FeedPostLike[]    @relation("UserFeedPostLikes")
   feedPostComments FeedPostComment[] @relation("UserFeedPostComments")
@@ -179,6 +180,20 @@ model User {
   behaviorMetrics  UserBehaviorMetric?
   coordinatedAbuseAlertsTarget CoordinatedAbuseAlert[] @relation("CoordinatedAbuseAlertTarget")
   coordinatedAbuseAlertsInvestigator CoordinatedAbuseAlert[] @relation("CoordinatedAbuseAlertInvestigator")
+}
+
+model PasswordResetToken {
+  id        String   @id @default(uuid())
+  userId    String
+  tokenHash String   @unique
+  expiresAt DateTime
+  usedAt    DateTime?
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, createdAt])
+  @@index([expiresAt])
 }
 
 model Profile {

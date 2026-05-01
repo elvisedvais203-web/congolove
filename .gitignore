@@ -10,3 +10,4 @@ coverage/
 .redis-data/
 tmp/
 apps/frontend/.next-run/
+mobile/android/NextalkMobileAndroid/.gradle/

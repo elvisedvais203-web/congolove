@@ -181,8 +181,9 @@ export async function getReviewQueue(req: AuthRequest, res: Response) {
         user: item.user
           ? {
               id: item.user.id,
-              displayName: item.user.profile?.displayName || item.user.phone,
-              phone: item.user.phone
+              displayName: item.user.profile?.displayName || item.user.phone || item.user.email || "Utilisateur",
+              phone: item.user.phone,
+              email: item.user.email
             }
           : null,
         analysis: item.contentAnalysis,
@@ -191,8 +192,9 @@ export async function getReviewQueue(req: AuthRequest, res: Response) {
         assignedTo: item.assignedAdmin
           ? {
               id: item.assignedAdmin.id,
-              displayName: item.assignedAdmin.profile?.displayName || item.assignedAdmin.phone,
-              phone: item.assignedAdmin.phone
+              displayName: item.assignedAdmin.profile?.displayName || item.assignedAdmin.phone || item.assignedAdmin.email || "Utilisateur",
+              phone: item.assignedAdmin.phone,
+              email: item.assignedAdmin.email
             }
           : null,
         notes: item.notes,

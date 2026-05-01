@@ -12,8 +12,12 @@ export function createApp() {
     res.json({
       service: "NexTalk API",
       ok: true,
-      health: "/api/health"
+      health: "/health"
     });
+  });
+
+  app.get("/health", (_req, res) => {
+    res.status(200).json({ ok: true });
   });
 
   applySecurityMiddlewares(app);
