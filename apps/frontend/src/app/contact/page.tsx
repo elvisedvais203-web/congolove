@@ -4,7 +4,7 @@ import { useState } from "react";
 import { SectionHeader } from "../../components/nextalksectionheader";
 
 const channels = [
-  { icon: "MAIL", title: "Email support", value: "support@nextalk.app", desc: "Reponse sous 24 h" },
+  { icon: "MAIL", title: "Email support", value: "support@solola.app", desc: "Reponse sous 24 h" },
   { icon: "CHAT", title: "Chat en direct", value: "Disponible 8h-22h", desc: "Lun-Sam" },
   { icon: "TEL", title: "Téléphone", value: "+243 97X XXX XXX", desc: "Appels et messages" },
 ];

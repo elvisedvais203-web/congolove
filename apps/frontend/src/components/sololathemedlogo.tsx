@@ -23,7 +23,7 @@ export function SololaThemedLogo({ width, height, className, alt = "Solola logo"
     return () => query.removeEventListener("change", apply);
   }, []);
 
-  const src = darkMode ? "/branding/nexttalk-logo.png" : "/branding/apple-touch-icon.png";
+  const src = darkMode ? "/branding/solola-logo.png" : "/branding/apple-touch-icon.png";
 
   return <Image src={src} alt={alt} width={width} height={height} className={className} priority={priority} />;
 }

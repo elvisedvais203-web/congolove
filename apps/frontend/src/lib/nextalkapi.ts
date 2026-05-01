@@ -3,6 +3,8 @@ import axios from "axios";
 function resolveApiBaseUrl(): string {
   const envUrl = process.env.NEXT_PUBLIC_API_URL?.trim();
   if (envUrl) return envUrl;
+  const socketEnv = process.env.NEXT_PUBLIC_SOCKET_URL?.trim();
+  if (socketEnv) return `${socketEnv.replace(/\/+$/, "")}/api`;
   if (typeof window !== "undefined") {
     const { protocol, hostname } = window.location;
     if (hostname === "localhost" || hostname === "127.0.0.1") {
@@ -10,10 +12,12 @@ function resolveApiBaseUrl(): string {
     }
     // Fallback when NEXT_PUBLIC_API_URL is missing in cloud deployments.
     if (hostname.endsWith(".onrender.com")) {
-      return `${protocol}//nextalk-api.onrender.com/api`;
+      return `${protocol}//solola-api.onrender.com/api`;
     }
   }
-  return "/api";
+  // Production-safe default: always hit the API service directly
+  // (prefer setting NEXT_PUBLIC_API_URL / NEXT_PUBLIC_SOCKET_URL on Render).
+  return "https://solola-api.onrender.com/api";
 }
 
 const api = axios.create({

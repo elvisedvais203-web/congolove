@@ -37,9 +37,10 @@ function isAllowedOrigin(origin: string): boolean {
   try {
     const u = new URL(origin);
     const host = u.hostname.toLowerCase();
-    // Keep production usable on Render previews/custom services.
-    if (host.endsWith(".onrender.com")) return true;
-    if (host === "localhost" || host === "127.0.0.1") return true;
+    // En dev on autorise localhost; en prod on exige CORS_ORIGIN explicite.
+    if (!env.nodeEnv || env.nodeEnv === "development") {
+      if (host === "localhost" || host === "127.0.0.1") return true;
+    }
     return false;
   } catch {
     return false;

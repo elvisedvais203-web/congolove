@@ -1,7 +1,8 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import {
   signInWithPhoneNumber,
   ApplicationVerifier,
@@ -10,6 +11,7 @@ import {
 import { auth } from "../../nextalkfirebase";
 import api from "../../lib/nextalkapi";
 import { storeSession } from "../../lib/nextalksession";
+import { SololaThemedLogo } from "../../components/sololathemedlogo";
 
 function formatPhoneInput(value: string) {
   if (!value.startsWith("+")) {
@@ -99,8 +101,18 @@ function firebaseAuthUserMessage(error: unknown): string {
 export default function AuthClientSimple() {
   const router = useRouter();
   const apiConfigured = Boolean(process.env.NEXT_PUBLIC_API_URL) || process.env.NODE_ENV !== "production";
-  const [tab, setTab] = useState<"phone" | "email">("phone");
-  const [authMode, setAuthMode] = useState<"login" | "register" | "reset">("login");
+  const [tab, setTab] = useState<"phone" | "email">("email");
+  const [authMode, setAuthMode] = useState<"login" | "register" | "reset">("register");
+
+  useEffect(() => {
+    const root = document.documentElement;
+    const prevTheme = root.getAttribute("data-theme");
+    root.setAttribute("data-theme", "light");
+    return () => {
+      if (prevTheme == null) root.removeAttribute("data-theme");
+      else root.setAttribute("data-theme", prevTheme);
+    };
+  }, []);
 
   const [phoneNumber, setPhoneNumber] = useState("+243");
   const [otpCode, setOtpCode] = useState("");
@@ -334,15 +346,27 @@ export default function AuthClientSimple() {
     }
   };
 
+  const emailTrimmed = email.trim();
+  const usernameTrimmed = displayName.trim();
+  const passwordOk = password.length >= 8;
+  const confirmOk = authMode !== "register" || password === confirmPassword;
+  const canSubmitEmail =
+    authMode === "login"
+      ? Boolean(emailTrimmed) && Boolean(password)
+      : authMode === "register"
+        ? Boolean(emailTrimmed) && Boolean(usernameTrimmed) && passwordOk && confirmOk
+        : Boolean(emailTrimmed);
+
   return (
     <div className="flex min-h-[80vh] items-center justify-center py-8">
       <section className="w-full max-w-md animate-slide-up">
         <div className="mb-8 text-center">
-          <h1 className="font-heading text-4xl font-bold text-white">
-            Connexion securisee
-          </h1>
+          <div className="mx-auto mb-4 flex w-full justify-center">
+            <SololaThemedLogo width={64} height={64} className="rounded-2xl" priority />
+          </div>
+          <h1 className="font-heading text-4xl font-bold text-white">Solola</h1>
           <p className="mt-2 text-sm text-[var(--muted)]">
-            Connectez-vous avec Telephone (OTP) ou Email.
+            Connecte-toi, partage, discute en temps réel.
           </p>
         </div>
 
@@ -375,7 +399,7 @@ export default function AuthClientSimple() {
               {!apiConfigured ? (
                 <div className="rounded-xl border border-amber-500/40 bg-amber-500/10 px-4 py-3 text-sm text-amber-100">
                   Configuration API manquante : definissez NEXT_PUBLIC_API_URL (ex:
-                  https://nextalk-api.onrender.com/api), puis redeployez le frontend.
+                  https://solola-api.onrender.com/api), puis redeployez le frontend.
                 </div>
               ) : null}
               {!FIREBASE_CONFIGURED ? (
@@ -447,39 +471,46 @@ export default function AuthClientSimple() {
               {!apiConfigured ? (
                 <div className="rounded-xl border border-amber-500/40 bg-amber-500/10 px-4 py-3 text-sm text-amber-100">
                   Configuration API manquante : definissez NEXT_PUBLIC_API_URL (ex:
-                  https://nextalk-api.onrender.com/api), puis redeployez le frontend.
+                  https://solola-api.onrender.com/api), puis redeployez le frontend.
                 </div>
               ) : null}
-              <div className="flex flex-wrap gap-2">
+              <div className="flex flex-col gap-2">
                 <button
                   type="button"
-                  onClick={() => setAuthMode("login")}
-                  className={`rounded-full px-3 py-1.5 text-xs ${authMode === "login" ? "btn-neon" : "btn-outline-neon"}`}
+                  disabled
+                  className="btn-outline-neon w-full rounded-2xl py-3 text-sm font-semibold opacity-60"
+                  title="Bientôt disponible"
                 >
-                  Connexion
+                  Continuer avec Google
                 </button>
                 <button
                   type="button"
-                  onClick={() => setAuthMode("register")}
-                  className={`rounded-full px-3 py-1.5 text-xs ${authMode === "register" ? "btn-neon" : "btn-outline-neon"}`}
+                  disabled
+                  className="btn-outline-neon w-full rounded-2xl py-3 text-sm font-semibold opacity-60"
+                  title="Bientôt disponible"
                 >
-                  Inscription
+                  Continuer avec Apple
                 </button>
                 <button
                   type="button"
-                  onClick={() => setAuthMode("reset")}
-                  className={`rounded-full px-3 py-1.5 text-xs ${authMode === "reset" ? "btn-neon" : "btn-outline-neon"}`}
+                  onClick={() => {
+                    setTab("phone");
+                    setStatus("");
+                  }}
+                  className="btn-outline-neon w-full rounded-2xl py-3 text-sm font-semibold"
                 >
-                  Reset
+                  Continuer avec téléphone (OTP)
                 </button>
               </div>
+
+              <div className="h-px bg-gradient-to-r from-transparent via-white/20 to-transparent" />
 
               {authMode === "register" ? (
                 <input
                   value={displayName}
                   onChange={(e) => setDisplayName(e.target.value)}
                   className="input-neon w-full rounded-2xl px-4 py-3.5 text-sm"
-                  placeholder="Nom affiche (optionnel)"
+                  placeholder="Nom d’utilisateur"
                 />
               ) : null}
 
@@ -487,7 +518,7 @@ export default function AuthClientSimple() {
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 className="input-neon w-full rounded-2xl px-4 py-3.5 text-sm"
-                placeholder="vous@email.com"
+                placeholder="Email ou numéro"
                 inputMode="email"
                 autoComplete="email"
               />
@@ -524,7 +555,7 @@ export default function AuthClientSimple() {
               <button
                 type="button"
                 onClick={() => void submitEmailAuth()}
-                disabled={submittingEmail}
+                disabled={submittingEmail || !canSubmitEmail}
                 className="btn-neon w-full rounded-2xl py-3.5 text-sm font-bold tracking-wide disabled:opacity-60"
               >
                 {submittingEmail
@@ -532,11 +563,60 @@ export default function AuthClientSimple() {
                   : authMode === "login"
                     ? "Se connecter"
                     : authMode === "register"
-                      ? "Creer un compte"
+                      ? "S’inscrire"
                       : resetToken.trim()
                         ? "Changer le mot de passe"
                         : "Demander le reset"}
               </button>
+
+              <p className="text-[11px] leading-relaxed text-slate-400">
+                En vous inscrivant, vous acceptez nos{" "}
+                <Link className="text-slate-200 underline underline-offset-2" href="/legal/terms">
+                  conditions
+                </Link>{" "}
+                et notre{" "}
+                <Link className="text-slate-200 underline underline-offset-2" href="/legal/privacy">
+                  politique de confidentialité
+                </Link>
+                .
+              </p>
+
+              <div className="flex items-center justify-between gap-3 text-xs text-slate-300">
+                {authMode === "register" ? (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setAuthMode("login");
+                      setStatus("");
+                    }}
+                    className="underline underline-offset-2"
+                  >
+                    Tu as déjà un compte ? Se connecter
+                  </button>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setAuthMode("register");
+                      setStatus("");
+                    }}
+                    className="underline underline-offset-2"
+                  >
+                    Nouveau sur Solola ? S’inscrire
+                  </button>
+                )}
+
+                <button
+                  type="button"
+                  onClick={() => {
+                    setAuthMode("reset");
+                    setStatus("");
+                  }}
+                  className="text-slate-400 underline underline-offset-2"
+                >
+                  Mot de passe oublié
+                </button>
+              </div>
             </>
           )}
 

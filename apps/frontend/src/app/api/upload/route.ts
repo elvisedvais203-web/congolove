@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 
 export async function POST(req: NextRequest) {
-  const apiBase = process.env.NEXT_PUBLIC_API_URL;
+  const socketBase = process.env.NEXT_PUBLIC_SOCKET_URL?.trim();
+  const apiBase = process.env.NEXT_PUBLIC_API_URL?.trim() || (socketBase ? `${socketBase.replace(/\/+$/, "")}/api` : "");
   if (!apiBase) {
     return NextResponse.json({ message: "NEXT_PUBLIC_API_URL manquant" }, { status: 500 });
   }

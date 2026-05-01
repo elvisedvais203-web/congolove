@@ -1,6 +1,6 @@
 services:
   - type: web
-    name: nextalk-api
+    name: solola-api
     runtime: node
     plan: starter
     rootDir: apps/backend
@@ -75,7 +75,7 @@ services:
       - key: SUPERADMIN_PASSWORD
         sync: false
   - type: web
-    name: nextalk-web
+    name: solola-web
     runtime: node
     plan: starter
     rootDir: apps/frontend
@@ -85,9 +85,9 @@ services:
       - key: NODE_ENV
         value: production
       - key: NEXT_PUBLIC_API_URL
-        value: https://nextalk-api.onrender.com/api
+        value: https://solola-api.onrender.com/api
       - key: NEXT_PUBLIC_SOCKET_URL
-        value: https://nextalk-api.onrender.com
+        value: https://solola-api.onrender.com
       - key: NEXT_PUBLIC_APP_NAME
         value: Solola
       - key: NEXT_PUBLIC_PUSH_PUBLIC_KEY
