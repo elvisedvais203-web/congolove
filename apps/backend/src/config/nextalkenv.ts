@@ -7,7 +7,9 @@ function parseCorsOrigins(raw: string): string[] {
     .filter(Boolean);
 }
 
-const corsOrigin = process.env.CORS_ORIGIN ?? "http://localhost:3000,https://congolove-web.onrender.com";
+const corsOrigin =
+  process.env.CORS_ORIGIN ??
+  "http://localhost:3000,https://congolove-web.onrender.com,https://nextalk-web.onrender.com";
 const nodeEnv = process.env.NODE_ENV ?? "development";
 const isProduction = nodeEnv === "production";
 

@@ -74,3 +74,29 @@ services:
         sync: false
       - key: SUPERADMIN_PASSWORD
         sync: false
+  - type: web
+    name: nextalk-web
+    runtime: node
+    plan: starter
+    rootDir: apps/frontend
+    buildCommand: npm install && npm run build
+    startCommand: npm start
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: NEXT_PUBLIC_API_URL
+        value: https://nextalk-api.onrender.com/api
+      - key: NEXT_PUBLIC_SOCKET_URL
+        value: https://nextalk-api.onrender.com
+      - key: NEXT_PUBLIC_APP_NAME
+        value: Solola
+      - key: NEXT_PUBLIC_PUSH_PUBLIC_KEY
+        sync: false
+      - key: NEXT_PUBLIC_FIREBASE_API_KEY
+        sync: false
+      - key: NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN
+        sync: false
+      - key: NEXT_PUBLIC_FIREBASE_PROJECT_ID
+        sync: false
+      - key: NEXT_PUBLIC_FIREBASE_APP_ID
+        sync: false

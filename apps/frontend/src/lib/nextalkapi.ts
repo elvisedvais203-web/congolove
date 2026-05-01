@@ -1,7 +1,23 @@
 import axios from "axios";
 
+function resolveApiBaseUrl(): string {
+  const envUrl = process.env.NEXT_PUBLIC_API_URL?.trim();
+  if (envUrl) return envUrl;
+  if (typeof window !== "undefined") {
+    const { protocol, hostname } = window.location;
+    if (hostname === "localhost" || hostname === "127.0.0.1") {
+      return "http://localhost:4000/api";
+    }
+    // Fallback when NEXT_PUBLIC_API_URL is missing in cloud deployments.
+    if (hostname.endsWith(".onrender.com")) {
+      return `${protocol}//nextalk-api.onrender.com/api`;
+    }
+  }
+  return "/api";
+}
+
 const api = axios.create({
-  baseURL: process.env.NEXT_PUBLIC_API_URL,
+  baseURL: resolveApiBaseUrl(),
   timeout: 12000
 });
 

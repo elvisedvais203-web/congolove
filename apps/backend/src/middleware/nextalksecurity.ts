@@ -32,6 +32,20 @@ export const paymentLimiter = rateLimit({
 
 const allowedOrigins = env.corsOrigins;
 
+function isAllowedOrigin(origin: string): boolean {
+  if (allowedOrigins.includes(origin)) return true;
+  try {
+    const u = new URL(origin);
+    const host = u.hostname.toLowerCase();
+    // Keep production usable on Render previews/custom services.
+    if (host.endsWith(".onrender.com")) return true;
+    if (host === "localhost" || host === "127.0.0.1") return true;
+    return false;
+  } catch {
+    return false;
+  }
+}
+
 export function applySecurityMiddlewares(app: Express): void {
   app.use(
     helmet({
@@ -52,7 +66,7 @@ export function applySecurityMiddlewares(app: Express): void {
   app.use(
     cors({
       origin: (origin, callback) => {
-        if (!origin || allowedOrigins.includes(origin)) return callback(null, true);
+        if (!origin || isAllowedOrigin(origin)) return callback(null, true);
         callback(new Error(`CORS bloque: ${origin}`));
       },
       credentials: true

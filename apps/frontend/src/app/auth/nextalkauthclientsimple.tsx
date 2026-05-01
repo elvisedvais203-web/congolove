@@ -98,6 +98,7 @@ function firebaseAuthUserMessage(error: unknown): string {
 
 export default function AuthClientSimple() {
   const router = useRouter();
+  const apiConfigured = Boolean(process.env.NEXT_PUBLIC_API_URL) || process.env.NODE_ENV !== "production";
   const [tab, setTab] = useState<"phone" | "email">("phone");
   const [authMode, setAuthMode] = useState<"login" | "register" | "reset">("login");
 
@@ -371,6 +372,12 @@ export default function AuthClientSimple() {
 
           {tab === "phone" ? (
             <>
+              {!apiConfigured ? (
+                <div className="rounded-xl border border-amber-500/40 bg-amber-500/10 px-4 py-3 text-sm text-amber-100">
+                  Configuration API manquante : definissez NEXT_PUBLIC_API_URL (ex:
+                  https://nextalk-api.onrender.com/api), puis redeployez le frontend.
+                </div>
+              ) : null}
               {!FIREBASE_CONFIGURED ? (
                 <div className="rounded-xl border border-amber-500/40 bg-amber-500/10 px-4 py-3 text-sm text-amber-100">
                   Configuration Firebase manquante : definissez NEXT_PUBLIC_FIREBASE_API_KEY,
@@ -437,6 +444,12 @@ export default function AuthClientSimple() {
             </>
           ) : (
             <>
+              {!apiConfigured ? (
+                <div className="rounded-xl border border-amber-500/40 bg-amber-500/10 px-4 py-3 text-sm text-amber-100">
+                  Configuration API manquante : definissez NEXT_PUBLIC_API_URL (ex:
+                  https://nextalk-api.onrender.com/api), puis redeployez le frontend.
+                </div>
+              ) : null}
               <div className="flex flex-wrap gap-2">
                 <button
                   type="button"
