@@ -147,6 +147,9 @@ export function UltraTelegramChat({ contactId, initialShowArchived = false }: Pr
   const [voiceTranscriptDraftId, setVoiceTranscriptDraftId] = useState<string | null>(null);
   const [voiceTranscriptDraft, setVoiceTranscriptDraft] = useState("");
   const [voiceTranscripts, setVoiceTranscripts] = useState<Record<string, string>>({});
+  const [scheduleAt, setScheduleAt] = useState("");
+  const [ephemeralSec, setEphemeralSec] = useState<number>(0);
+  const [pendingScheduled, setPendingScheduled] = useState<Array<{ id: string; at: number; text: string }>>([]);
 
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const cameraInputRef = useRef<HTMLInputElement | null>(null);
@@ -502,24 +505,33 @@ export function UltraTelegramChat({ contactId, initialShowArchived = false }: Pr
     }
   };
 
-  const sendCurrentDraft = async (typeOverride?: ChatMessageType, textOverride?: string) => {
+  const sendCurrentDraft = async (
+    typeOverride?: ChatMessageType,
+    textOverride?: string,
+    options?: { scheduledTs?: number; ephemeralTtlSec?: number }
+  ) => {
     if (!activeChatId) {
       return;
     }
     const csrf = await fetchCsrfToken();
     const replyToMessageId = replyTo?.id ?? undefined;
+    const baseText = textOverride ?? text.trim();
+    const decoratedText =
+      options?.ephemeralTtlSec && options.ephemeralTtlSec > 0
+        ? `${baseText}${baseText ? " " : ""}[TTL:${options.ephemeralTtlSec}s]`
+        : baseText;
     const payload = uploadDraft
       ? {
           type: uploadDraft.type,
           mediaUrl: uploadDraft.mediaUrl,
           fileName: uploadDraft.fileName,
           durationSec: uploadDraft.durationSec,
-          text: text.trim() || undefined,
+          text: decoratedText || undefined,
           replyToMessageId
         }
       : {
           type: typeOverride ?? "TEXT",
-          text: textOverride ?? text.trim(),
+          text: decoratedText,
           replyToMessageId
         };
 
@@ -534,8 +546,46 @@ export function UltraTelegramChat({ contactId, initialShowArchived = false }: Pr
     setShowEmoji(false);
     setShowSticker(false);
     setReplyTo(null);
+    setScheduleAt("");
     await refreshConversations();
     requestAnimationFrame(() => messagesEndRef.current?.scrollIntoView({ behavior: smoothBehavior }));
+
+    if (options?.ephemeralTtlSec && options.ephemeralTtlSec > 0) {
+      window.setTimeout(() => {
+        setMessages((prev) => prev.filter((m) => m.id !== created.id));
+      }, options.ephemeralTtlSec * 1000);
+    }
+  };
+
+  const sendWithScheduling = async () => {
+    if (!scheduleAt) {
+      await sendCurrentDraft(undefined, undefined, { ephemeralTtlSec: ephemeralSec || undefined });
+      return;
+    }
+    const when = new Date(scheduleAt).getTime();
+    if (!Number.isFinite(when) || when <= Date.now()) {
+      setCallNotice("Horaire invalide pour message programmé.");
+      return;
+    }
+    const id = `sched-${Date.now()}`;
+    setPendingScheduled((prev) => [...prev, { id, at: when, text: text.trim() || uploadDraft?.fileName || "Message" }]);
+    const delay = Math.max(0, when - Date.now());
+    window.setTimeout(() => {
+      void sendCurrentDraft(undefined, undefined, { ephemeralTtlSec: ephemeralSec || undefined });
+      setPendingScheduled((prev) => prev.filter((item) => item.id !== id));
+    }, delay);
+    setText("");
+    setUploadDraft(null);
+    setScheduleAt("");
+    setCallNotice("Message programmé.");
+  };
+
+  const forwardMessage = (message: ChatMessage) => {
+    const excerpt =
+      message.text?.trim() ||
+      (message.type === "IMAGE" ? "[Image]" : message.type === "VIDEO" ? "[Video]" : message.type === "VOICE" ? "[Vocal]" : "[Message]");
+    setText((prev) => `${prev ? `${prev}\n` : ""}↪ Transfere: ${excerpt}`);
+    setCallNotice("Message transféré dans le brouillon.");
   };
 
   useEffect(() => {
@@ -1316,6 +1366,11 @@ export function UltraTelegramChat({ contactId, initialShowArchived = false }: Pr
                                 Supprimer
                               </button>
                             )}
+                            {!message.deletedAt && (
+                              <button onClick={() => forwardMessage(message)} className="rounded-full bg-white/10 px-2 py-1 text-xs text-slate-200 hover:bg-white/20">
+                                Transferer
+                              </button>
+                            )}
                           </div>
 
                           {groupedReactions.length > 0 && (
@@ -1386,6 +1441,34 @@ export function UltraTelegramChat({ contactId, initialShowArchived = false }: Pr
                     <button onClick={() => void toggleRecorder()} className={`rounded-full px-3 py-2 text-sm ${isRecordingMine ? "bg-amber-400 text-[#08101d]" : "bg-white/10 text-white"}`}>
                       {isRecordingMine ? "Stop micro" : "Micro"}
                     </button>
+                    <label className="rounded-full bg-white/10 px-3 py-2 text-sm text-white">
+                      Ephemere
+                      <select
+                        value={ephemeralSec}
+                        onChange={(e) => setEphemeralSec(Number(e.target.value))}
+                        className="ml-2 bg-transparent text-xs outline-none"
+                      >
+                        <option value={0}>Off</option>
+                        <option value={30}>30s</option>
+                        <option value={60}>1m</option>
+                        <option value={300}>5m</option>
+                      </select>
+                    </label>
+                  </div>
+
+                  <div className="mb-3 flex flex-wrap items-center gap-2">
+                    <label className="text-xs text-slate-300">Programmer:</label>
+                    <input
+                      type="datetime-local"
+                      value={scheduleAt}
+                      onChange={(e) => setScheduleAt(e.target.value)}
+                      className="rounded-xl border border-white/10 bg-black/20 px-2 py-1 text-xs text-slate-200 outline-none"
+                    />
+                    {pendingScheduled.length > 0 ? (
+                      <span className="rounded-full bg-white/10 px-2 py-1 text-[11px] text-slate-300">
+                        {pendingScheduled.length} message(s) programme(s)
+                      </span>
+                    ) : null}
                   </div>
 
                   {icebreakers.length > 0 && (
@@ -1431,11 +1514,11 @@ export function UltraTelegramChat({ contactId, initialShowArchived = false }: Pr
                       placeholder="Ecrivez un message, ajoutez un media, ou envoyez une note vocale"
                     />
                     <button
-                      onClick={() => void sendCurrentDraft()}
+                      onClick={() => void sendWithScheduling()}
                       disabled={uploadingMedia}
                       className="rounded-2xl bg-neoblue px-4 py-3 text-sm font-semibold text-[#07101f]"
                     >
-                      {text.trim() || uploadDraft ? "Envoyer" : "Pret"}
+                      {scheduleAt ? "Programmer" : text.trim() || uploadDraft ? "Envoyer" : "Pret"}
                     </button>
                   </div>
 
