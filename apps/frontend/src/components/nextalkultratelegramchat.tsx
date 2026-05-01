@@ -7,6 +7,7 @@ import { AuthGuard } from "./nextalkauthguard";
 import { SectionHeader } from "./nextalksectionheader";
 import { fetchCsrfToken } from "../services/nextalksecurity";
 import { getAiIcebreakers } from "../services/nextalkai";
+import api from "../lib/nextalkapi";
 import {
   archiveConversation,
   createGroupChat,

@@ -3,7 +3,6 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import {
-  ConfirmationResult,
   signInWithPhoneNumber,
   ApplicationVerifier,
   RecaptchaVerifier
@@ -24,6 +23,8 @@ const FIREBASE_CONFIGURED = Boolean(
     process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID &&
     process.env.NEXT_PUBLIC_FIREBASE_APP_ID
 );
+
+type PhoneConfirmationResult = { confirm: (code: string) => Promise<any> };
 
 /** Messages utilisateur pour les erreurs Firebase Auth (telephone / reCAPTCHA). */
 function firebaseAuthUserMessage(error: unknown): string {
@@ -99,7 +100,7 @@ export default function AuthClientSimple() {
   const [phoneNumber, setPhoneNumber] = useState("+243");
   const [otpCode, setOtpCode] = useState("");
   const [confirmationResult, setConfirmationResult] =
-    useState<ConfirmationResult | null>(null);
+    useState<PhoneConfirmationResult | null>(null);
   const [status, setStatus] = useState("");
   const [statusType, setStatusType] = useState<"error" | "success">("success");
   const [sending, setSending] = useState(false);

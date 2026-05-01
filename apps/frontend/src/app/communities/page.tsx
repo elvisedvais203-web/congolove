@@ -35,7 +35,10 @@ export default function CommunitiesPage() {
 
   const groupsAndChannels = useMemo(() => rows.filter((c) => c.kind === "GROUP" && !c.archived), [rows]);
   const mine = useMemo(
-    () => groupsAndChannels.filter((c) => Array.isArray(c.adminIds) && Boolean(me?.id) && c.adminIds.includes(me.id)),
+    () =>
+      groupsAndChannels.filter(
+        (c) => Array.isArray(c.adminIds) && typeof me?.id === "string" && c.adminIds.includes(me.id)
+      ),
     [groupsAndChannels, me?.id]
   );
   const visibleRows = tab === "mine" ? mine : groupsAndChannels;
