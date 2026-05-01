@@ -5,6 +5,8 @@ const api = axios.create({
   timeout: 12000
 });
 
+let refreshPromise: Promise<string> | null = null;
+
 api.interceptors.request.use((config) => {
   if (typeof window !== "undefined") {
     const token = localStorage.getItem("accessToken");
@@ -17,7 +19,7 @@ api.interceptors.request.use((config) => {
 
 api.interceptors.response.use(
   (response) => response,
-  (error) => {
+  async (error) => {
     if (typeof window !== "undefined") {
       const status = error?.response?.status;
       const message = String(error?.response?.data?.message ?? "").toLowerCase();
@@ -27,6 +29,49 @@ api.interceptors.response.use(
       const mustLogout =
         status === 401 ||
         (status === 403 && (message.includes("banni") || message.includes("suspendu") || message.includes("session invalidee")));
+
+      // One-shot refresh flow (retry the original request once).
+      const original = error?.config as (typeof error)["config"] & { _klRetried?: boolean };
+      const canTryRefresh =
+        status === 401 &&
+        !original?._klRetried &&
+        !String(original?.url ?? "").includes("/auth/refresh") &&
+        Boolean(localStorage.getItem("refreshToken"));
+
+      if (canTryRefresh) {
+        try {
+          original._klRetried = true;
+          if (!refreshPromise) {
+            refreshPromise = (async () => {
+              const refreshToken = localStorage.getItem("refreshToken");
+              const resp = await api.post("/auth/refresh", { refreshToken });
+              const accessToken = resp.data?.tokens?.accessToken as string | undefined;
+              const nextRefresh = resp.data?.tokens?.refreshToken as string | undefined;
+              const user = resp.data?.user;
+              if (!accessToken || !nextRefresh || !user) {
+                throw new Error("Refresh invalide");
+              }
+              localStorage.setItem("accessToken", accessToken);
+              localStorage.setItem("refreshToken", nextRefresh);
+              localStorage.setItem("currentUser", JSON.stringify(user));
+              return accessToken;
+            })().finally(() => {
+              refreshPromise = null;
+            });
+          }
+
+          const newAccess = await refreshPromise;
+          original.headers = original.headers ?? {};
+          original.headers.Authorization = `Bearer ${newAccess}`;
+          return api.request(original);
+        } catch {
+          localStorage.removeItem("accessToken");
+          localStorage.removeItem("refreshToken");
+          localStorage.removeItem("currentUser");
+          window.location.href = "/auth";
+          return Promise.reject(error);
+        }
+      }
 
       if (mustLogout) {
         if (status === 403) {

@@ -13,6 +13,10 @@ struct Profile: Codable {
 
 @MainActor
 final class ProfileStore: ObservableObject {
+  private enum SessionKeys {
+    static let firebaseIdToken = "solola.firebase.idtoken"
+  }
+
   @Published var uid: String?
   @Published var profile: Profile?
   @Published var isLoading: Bool = true
@@ -99,6 +103,7 @@ final class ProfileStore: ObservableObject {
       profile = nil
       listener?.remove()
       listener = nil
+      UserDefaults.standard.removeObject(forKey: SessionKeys.firebaseIdToken)
     } catch {
       self.error = error.localizedDescription
     }
@@ -109,6 +114,8 @@ final class ProfileStore: ObservableObject {
     error = nil
     do {
       let res = try await auth.signIn(withEmail: email, password: password)
+      let token = try await res.user.getIDToken()
+      UserDefaults.standard.set(token, forKey: SessionKeys.firebaseIdToken)
       startListening(uid: res.user.uid)
     } catch {
       isLoading = false
@@ -121,6 +128,8 @@ final class ProfileStore: ObservableObject {
     error = nil
     do {
       let res = try await auth.createUser(withEmail: email, password: password)
+      let token = try await res.user.getIDToken()
+      UserDefaults.standard.set(token, forKey: SessionKeys.firebaseIdToken)
       startListening(uid: res.user.uid)
     } catch {
       isLoading = false
@@ -141,6 +150,8 @@ final class ProfileStore: ObservableObject {
         verificationCode: code
       )
       let res = try await auth.signIn(with: credential)
+      let token = try await res.user.getIDToken()
+      UserDefaults.standard.set(token, forKey: SessionKeys.firebaseIdToken)
       startListening(uid: res.user.uid)
     } catch {
       isLoading = false
@@ -150,7 +161,9 @@ final class ProfileStore: ObservableObject {
 
   func getIdToken() async throws -> String {
     guard let user = auth.currentUser else { throw NSError(domain: "Auth", code: 401, userInfo: [NSLocalizedDescriptionKey: "Non connecté"]) }
-    return try await user.getIDToken()
+    let token = try await user.getIDToken()
+    UserDefaults.standard.set(token, forKey: SessionKeys.firebaseIdToken)
+    return token
   }
 
   func getAppCheckToken() async throws -> String {

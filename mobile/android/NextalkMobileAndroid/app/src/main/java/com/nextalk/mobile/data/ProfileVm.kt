@@ -32,7 +32,8 @@ data class ProfileState(
   val uid: String? = null,
   val loading: Boolean = true,
   val error: String? = null,
-  val profile: Profile? = null
+  val profile: Profile? = null,
+  val authToken: String? = null
 )
 
 class ProfileVm : ViewModel() {
@@ -54,11 +55,17 @@ class ProfileVm : ViewModel() {
 
   fun onAuthChanged() {
     val current = auth.currentUser
-    if (current != null) listenProfile(current.uid)
+    if (current != null) {
+      current.getIdToken(false)
+        .addOnSuccessListener { token ->
+          _state.value = _state.value.copy(authToken = token.token)
+        }
+      listenProfile(current.uid)
+    }
     else {
       unsubscribe?.invoke()
       unsubscribe = null
-      _state.value = ProfileState(uid = null, loading = false, error = null, profile = null)
+      _state.value = ProfileState(uid = null, loading = false, error = null, profile = null, authToken = null)
     }
   }
 

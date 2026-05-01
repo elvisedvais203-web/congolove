@@ -2,7 +2,7 @@ export type AppRole = "USER" | "ADMIN" | "SUPERADMIN";
 
 export type AppUser = {
   id: string;
-  phone: string;
+  phone?: string | null;
   email?: string;
   planTier: "FREE" | "PREMIUM";
   role: AppRole;
@@ -41,6 +41,15 @@ export function logoutSession() {
   localStorage.removeItem("accessToken");
   localStorage.removeItem("refreshToken");
   localStorage.removeItem("currentUser");
+}
+
+export function storeSession(input: { accessToken: string; refreshToken: string; user: AppUser }) {
+  if (typeof window === "undefined") {
+    return;
+  }
+  localStorage.setItem("accessToken", input.accessToken);
+  localStorage.setItem("refreshToken", input.refreshToken);
+  localStorage.setItem("currentUser", JSON.stringify(input.user));
 }
 
 export function canAccessAdmin(user: AppUser | null): boolean {
