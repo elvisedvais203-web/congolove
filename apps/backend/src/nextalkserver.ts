@@ -3,7 +3,6 @@ import { Server } from "socket.io";
 import { env } from "./config/nextalkenv";
 import { createApp } from "./nextalkapp";
 import { registerChatSocket } from "./sockets/nextalkchat.socket";
-import { registerLiveStreamSocket, registerVideoCallSocket } from "./sockets/nextalklive.socket";
 import { logger } from "./utils/nextalklogger";
 import { prisma } from "./config/nextalkdb";
 import { redis } from "./config/nextalkredis";
@@ -77,8 +76,6 @@ async function start() {
     });
 
     registerChatSocket(io);
-    registerLiveStreamSocket(io);
-    registerVideoCallSocket(io);
 
     server = httpServer.listen(env.port, () => {
       logger.info(`API et Socket.io en cours sur le port ${env.port}`);
@@ -94,3 +91,4 @@ async function start() {
 }
 
 void start();
+

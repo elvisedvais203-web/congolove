@@ -10,14 +10,6 @@
     "forceConsistentCasingInFileNames": true,
     "types": ["node"]
   },
-  "include": ["src", "prisma/seed.ts"],
-  "exclude": [
-    "src/scripts/**/*.example.ts",
-    "src/routes/nextalklivestream.routes.ts",
-    "src/routes/nextalkvideocall.routes.ts",
-    "src/services/nextalkagora.service.ts",
-    "src/services/nextalklivestream.service.ts",
-    "src/services/nextalkvideocall.service.ts",
-    "src/sockets/nextalklive.socket.ts"
-  ]
+  "include": ["src/nextalkserver.ts", "prisma/seed.ts"],
+  "exclude": ["src/scripts/**/*.example.ts"]
 }
