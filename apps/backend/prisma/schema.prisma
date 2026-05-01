@@ -1,0 +1,887 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum PlanTier {
+  FREE
+  PREMIUM
+}
+
+enum SwipeAction {
+  LIKE
+  PASS
+}
+
+enum MessageType {
+  TEXT
+  IMAGE
+  VIDEO
+  VOICE
+  STICKER
+}
+
+enum PaymentStatus {
+  PENDING
+  SUCCESS
+  FAILED
+}
+
+enum UserRole {
+  USER
+  ADMIN
+  SUPERADMIN
+}
+
+enum ChatKind {
+  PRIVATE
+  GROUP
+}
+
+enum ChatMemberRole {
+  MEMBER
+  ADMIN
+}
+
+enum StoryVisibility {
+  PUBLIC
+  FOLLOWERS
+}
+
+enum AppLanguage {
+  FR
+  SW
+  EN
+}
+
+enum AppTheme {
+  DARK
+  LIGHT
+}
+
+enum ChatTheme {
+  CLASSIC
+  AQUA
+  SUNSET
+}
+
+enum VoiceTranscriptMode {
+  NEVER
+  MANUAL
+}
+
+enum ProfileVisibility {
+  VISIBLE
+  HIDDEN
+}
+
+enum MessagePolicy {
+  ALL
+  MATCH_ONLY
+}
+
+enum ContentClassification {
+  SAFE
+  SUSPICIOUS
+  TOXIC
+  HATE_SPEECH
+  SEXUAL_CONTENT
+  VIOLENCE
+  SPAM
+  SCAM
+}
+
+// Live Streaming & Video Calls Enums
+enum StreamStatus {
+  SCHEDULED
+  LIVE
+  ENDED
+  CANCELLED
+}
+
+enum CallStatus {
+  RINGING
+  ACCEPTED
+  ONGOING
+  ENDED
+  REJECTED
+  MISSED
+  CANCELLED
+}
+
+enum CallType {
+  AUDIO
+  VIDEO
+}
+
+enum CallDirection {
+  INCOMING
+  OUTGOING
+}
+
+enum ModerationSeverity {
+  LOW
+  MEDIUM
+  HIGH
+  CRITICAL
+}
+
+enum ReviewStatus {
+  PENDING
+  APPROVED
+  REJECTED
+  ESCALATED
+  RESOLVED
+}
+
+enum PrivacyMode {
+  PUBLIC
+  PRIVATE
+  SEMI_PRIVATE
+}
+
+enum MessageStatus {
+  SENT
+  DELIVERED
+  SEEN
+}
+
+model User {
+  id               String        @id @default(uuid())
+  email            String?       @unique
+  phone            String?       @unique
+  username         String?       @unique
+  usernameSearchLower String?    @unique
+  passwordHash     String
+  otpVerified      Boolean       @default(false)
+  planTier         PlanTier      @default(FREE)
+  reputation       Int           @default(50)
+  dataSaverEnabled Boolean       @default(false)
+  invisibleMode    Boolean       @default(false)
+  role             UserRole      @default(USER)
+  privacyMode      PrivacyMode   @default(PUBLIC)
+  createdAt        DateTime      @default(now())
+  updatedAt        DateTime      @updatedAt
+
+  profile          Profile?
+  photos           Photo[]
+  sentLikes        Like[]        @relation("SentLikes")
+  receivedLikes    Like[]        @relation("ReceivedLikes")
+  matchesAsA       Match[]       @relation("MatchA")
+  matchesAsB       Match[]       @relation("MatchB")
+  messages         Message[]
+  subscriptions    Subscription[]
+  payments         Payment[]
+  reportsMade      UserReport[]  @relation("ReportsMade")
+  reportsReceived  UserReport[]  @relation("ReportsReceived")
+  auditLogs        AuditLog[]
+  followers        Follow[]      @relation("Followers")
+  following        Follow[]      @relation("Following")
+  stories          Story[]
+  storyViews       StoryView[]
+  chatMemberships  ChatMember[]
+  chatMessages     ChatMessage[]  @relation("ChatMessageSender")
+  chatReceipts     ChatMessageReceipt[]
+  chatReactions    ChatReaction[]
+  settings         UserSettings?
+  loginEvents      LoginEvent[]
+  firebaseUid      String?           @unique
+  passwordResetTokens PasswordResetToken[]
+  feedPosts        FeedPost[]        @relation("UserFeedPosts")
+  feedPostLikes    FeedPostLike[]    @relation("UserFeedPostLikes")
+  feedPostComments FeedPostComment[] @relation("UserFeedPostComments")
+  savedFeedPosts   FeedPostSave[]    @relation("UserFeedPostSaves")
+  contacts         Contact[]         @relation("ContactOwner")
+  contactOf        Contact[]         @relation("ContactUser")
+  blockedBy        Block[]           @relation("BlockedUser")
+  blockedUsers     Block[]           @relation("BlockingUser")
+  contentAnalyses  ContentAnalysis[]
+  moderationReviews ModerationReviewQueue[] @relation("ModerationReviewQueueUser")
+  assignedReviews  ModerationReviewQueue[] @relation("ModerationReviewQueueAdmin")
+  moderationActions ModerationAction[]     @relation("ModerationActionUser")
+  targetedActions  ModerationAction[]     @relation("ModerationActionTarget")
+  adminActions     ModerationAction[]     @relation("ModerationActionAdmin")
+  behaviorMetrics  UserBehaviorMetric?
+  coordinatedAbuseAlertsTarget CoordinatedAbuseAlert[] @relation("CoordinatedAbuseAlertTarget")
+  coordinatedAbuseAlertsInvestigator CoordinatedAbuseAlert[] @relation("CoordinatedAbuseAlertInvestigator")
+  // Live Streaming & Video Calls
+  liveStreams      LiveStream[]           @relation("LiveStreamBroadcaster")
+  liveViewings     LiveStreamViewer[]
+  videoCallsInitiated VideoCall[]         @relation("VideoCallInitiator")
+  videoCallsReceived VideoCall[]          @relation("VideoCallRecipient")
+  videoCallParticipants VideoCallParticipant[]
+}
+
+model PasswordResetToken {
+  id        String   @id @default(uuid())
+  userId    String
+  tokenHash String   @unique
+  expiresAt DateTime
+  usedAt    DateTime?
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, createdAt])
+  @@index([expiresAt])
+}
+
+model Profile {
+  id            String   @id @default(uuid())
+  userId        String   @unique
+  displayName   String
+  bio           String?
+  city          String?
+  latitude      Float?
+  longitude     Float?
+  interests     String[]
+  verifiedBadge Boolean  @default(false)
+  isPrivate     Boolean  @default(false)
+  privacyMode   PrivacyMode @default(PUBLIC)
+  profileImageUrl String?
+  lastActiveAt  DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+}
+
+model Contact {
+  id              String   @id @default(uuid())
+  userId          String
+  contactUserId   String?
+  contactPhoneNumber String?
+  contactPhoneNumberHash String?
+  displayName     String?
+  isFavorite      Boolean  @default(false)
+  blockedAt       DateTime?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  user            User     @relation("ContactOwner", fields: [userId], references: [id], onDelete: Cascade)
+  contactUser     User?    @relation("ContactUser", fields: [contactUserId], references: [id], onDelete: SetNull)
+
+  @@unique([userId, contactUserId])
+  @@index([userId, createdAt])
+  @@index([contactPhoneNumberHash])
+}
+
+model Block {
+  id              String   @id @default(uuid())
+  blockingUserId  String
+  blockedUserId   String
+  reason          String?
+  createdAt       DateTime @default(now())
+
+  blockingUser    User     @relation("BlockingUser", fields: [blockingUserId], references: [id], onDelete: Cascade)
+  blockedUser     User     @relation("BlockedUser", fields: [blockedUserId], references: [id], onDelete: Cascade)
+
+  @@unique([blockingUserId, blockedUserId])
+  @@index([blockedUserId])
+}
+
+model Photo {
+  id        String   @id @default(uuid())
+  userId    String
+  url       String
+  isPrimary Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model Like {
+  id         String      @id @default(uuid())
+  fromUserId String
+  toUserId   String
+  action     SwipeAction
+  createdAt  DateTime    @default(now())
+
+  fromUser User @relation("SentLikes", fields: [fromUserId], references: [id], onDelete: Cascade)
+  toUser   User @relation("ReceivedLikes", fields: [toUserId], references: [id], onDelete: Cascade)
+
+  @@unique([fromUserId, toUserId])
+}
+
+model Match {
+  id        String   @id @default(uuid())
+  userAId   String
+  userBId   String
+  createdAt DateTime @default(now())
+
+  userA User @relation("MatchA", fields: [userAId], references: [id], onDelete: Cascade)
+  userB User @relation("MatchB", fields: [userBId], references: [id], onDelete: Cascade)
+  messages Message[]
+
+  @@unique([userAId, userBId])
+}
+
+model Message {
+  id        String      @id @default(uuid())
+  matchId   String
+  senderId  String
+  type      MessageType @default(TEXT)
+  text      String?
+  mediaUrl  String?
+  isRead    Boolean     @default(false)
+  readAt    DateTime?
+  createdAt DateTime    @default(now())
+
+  sender User  @relation(fields: [senderId], references: [id], onDelete: Cascade)
+  match  Match @relation(fields: [matchId], references: [id], onDelete: Cascade)
+}
+
+model Follow {
+  id           String   @id @default(uuid())
+  followerId   String
+  followingId  String
+  approved     Boolean  @default(true)
+  createdAt    DateTime @default(now())
+
+  follower  User @relation("Following", fields: [followerId], references: [id], onDelete: Cascade)
+  following User @relation("Followers", fields: [followingId], references: [id], onDelete: Cascade)
+
+  @@unique([followerId, followingId])
+}
+
+model Story {
+  id          String   @id @default(uuid())
+  userId      String
+  mediaUrl    String
+  mediaType   String
+  visibility  StoryVisibility @default(PUBLIC)
+  caption     String?
+  expiresAt   DateTime
+  createdAt   DateTime @default(now())
+
+  user      User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  viewers   StoryView[]
+
+  @@index([userId, createdAt])
+}
+
+model UserSettings {
+  id                  String              @id @default(uuid())
+  userId              String              @unique
+  language            AppLanguage         @default(FR)
+  theme               AppTheme            @default(DARK)
+  chatTheme           ChatTheme           @default(CLASSIC)
+  chatAnimations      Boolean             @default(true)
+  readReceipts        Boolean             @default(true)
+  autoSaveMedia       Boolean             @default(false)
+  voiceTranscriptMode VoiceTranscriptMode @default(NEVER)
+  profileVisibility   ProfileVisibility   @default(VISIBLE)
+  messagePolicy       MessagePolicy       @default(MATCH_ONLY)
+  hideOnlineStatus    Boolean             @default(false)
+  notifMessages       Boolean             @default(true)
+  notifLikes          Boolean             @default(true)
+  notifCalls          Boolean             @default(true)
+  storyVisibility     StoryVisibility     @default(PUBLIC)
+  createdAt           DateTime            @default(now())
+  updatedAt           DateTime            @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model LoginEvent {
+  id          String   @id @default(uuid())
+  userId      String
+  identifier  String
+  ipAddress   String?
+  userAgent   String?
+  success     Boolean  @default(false)
+  reason      String?
+  createdAt   DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, createdAt])
+}
+
+model FeedPost {
+  id         String            @id @default(uuid())
+  authorId   String
+  content    String
+  mediaUrl   String?
+  createdAt  DateTime          @default(now())
+  updatedAt  DateTime          @updatedAt
+
+  author     User              @relation("UserFeedPosts", fields: [authorId], references: [id], onDelete: Cascade)
+  likes      FeedPostLike[]
+  comments   FeedPostComment[]
+  saves      FeedPostSave[]
+
+  @@index([createdAt])
+}
+
+model FeedPostSave {
+  id        String   @id @default(uuid())
+  postId    String
+  userId    String
+  createdAt DateTime @default(now())
+
+  post FeedPost @relation(fields: [postId], references: [id], onDelete: Cascade)
+  user User     @relation("UserFeedPostSaves", fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([postId, userId])
+  @@index([userId, createdAt])
+}
+
+model FeedPostLike {
+  id        String    @id @default(uuid())
+  postId    String
+  userId    String
+
+  post FeedPost @relation(fields: [postId], references: [id], onDelete: Cascade)
+  user User     @relation("UserFeedPostLikes", fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([postId, userId])
+}
+
+model FeedPostComment {
+  id        String    @id @default(uuid())
+  postId    String
+  userId    String
+  content   String
+  createdAt DateTime  @default(now())
+
+  post FeedPost @relation(fields: [postId], references: [id], onDelete: Cascade)
+  user User     @relation("UserFeedPostComments", fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([postId, createdAt])
+}
+
+model StoryView {
+  id        String   @id @default(uuid())
+  storyId   String
+  viewerId  String
+  viewedAt  DateTime @default(now())
+
+  story  Story @relation(fields: [storyId], references: [id], onDelete: Cascade)
+  viewer User  @relation(fields: [viewerId], references: [id], onDelete: Cascade)
+
+  @@unique([storyId, viewerId])
+}
+
+model Subscription {
+  id          String    @id @default(uuid())
+  userId      String
+  startedAt   DateTime  @default(now())
+  expiresAt   DateTime
+  active      Boolean   @default(true)
+  autoRenew   Boolean   @default(false)
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model Payment {
+  id            String        @id @default(uuid())
+  userId        String
+  provider      String
+  amountCdf     Int
+  status        PaymentStatus @default(PENDING)
+  externalRef   String?
+  purpose       String
+  createdAt     DateTime      @default(now())
+  processedAt   DateTime?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model UserReport {
+  id             String   @id @default(uuid())
+  reporterId     String
+  reportedUserId String
+  reason         String
+  createdAt      DateTime @default(now())
+
+  reporter     User @relation("ReportsMade", fields: [reporterId], references: [id], onDelete: Cascade)
+  reportedUser User @relation("ReportsReceived", fields: [reportedUserId], references: [id], onDelete: Cascade)
+}
+
+model AuditLog {
+  id          String   @id @default(uuid())
+  userId      String?
+  action      String
+  method      String
+  path        String
+  ipAddress   String?
+  userAgent   String?
+  statusCode  Int
+  metadata    Json?
+  createdAt   DateTime @default(now())
+
+  user User? @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  @@index([userId, createdAt])
+}
+
+model Chat {
+  id            String       @id @default(cuid())
+  kind          ChatKind
+  isChannel     Boolean      @default(false)
+  title         String?
+  description   String?
+  avatarUrl     String?
+  creatorId     String?
+  subscriberCount Int        @default(0)
+  pinnedMessageId String?
+  isPublic      Boolean      @default(false)
+  createdAt     DateTime     @default(now())
+  updatedAt     DateTime     @updatedAt
+
+  members       ChatMember[]
+  messages      ChatMessage[]
+}
+
+model ChatMember {
+  id         String         @id @default(cuid())
+  chatId      String
+  userId      String
+  role        ChatMemberRole @default(MEMBER)
+  archivedAt  DateTime?
+  lastReadAt  DateTime?
+  joinedAt    DateTime       @default(now())
+
+  chat        Chat           @relation(fields: [chatId], references: [id], onDelete: Cascade)
+  user        User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([chatId, userId])
+  @@index([userId, archivedAt])
+}
+
+model ChatMessage {
+  id          String               @id @default(cuid())
+  chatId      String
+  senderId    String
+  replyToId   String?
+  type        MessageType         @default(TEXT)
+  text        String?
+  mediaUrl    String?
+  fileName    String?
+  durationSec Int?
+  status      MessageStatus       @default(SENT)
+  editedAt    DateTime?
+  deletedAt   DateTime?
+  createdAt   DateTime            @default(now())
+
+  chat         Chat                 @relation(fields: [chatId], references: [id], onDelete: Cascade)
+  sender       User                 @relation("ChatMessageSender", fields: [senderId], references: [id], onDelete: Cascade)
+  replyTo      ChatMessage?         @relation("ChatMessageReply", fields: [replyToId], references: [id], onDelete: SetNull)
+  replies      ChatMessage[]        @relation("ChatMessageReply")
+  receipts     ChatMessageReceipt[]
+  reactions    ChatReaction[]
+
+  @@index([chatId, createdAt])
+  @@index([status])
+  @@index([replyToId])
+}
+
+model ChatMessageReceipt {
+  id          String      @id @default(cuid())
+  messageId    String
+  userId       String
+  deliveredAt  DateTime   @default(now())
+  readAt       DateTime?
+
+  message      ChatMessage @relation(fields: [messageId], references: [id], onDelete: Cascade)
+  user         User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([messageId, userId])
+  @@index([userId, readAt])
+}
+
+model ChatReaction {
+  id          String      @id @default(cuid())
+  messageId    String
+  userId       String
+  emoji        String
+  createdAt    DateTime   @default(now())
+
+  message      ChatMessage @relation(fields: [messageId], references: [id], onDelete: Cascade)
+  user         User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([messageId, userId, emoji])
+  @@index([messageId, createdAt])
+}
+
+// Advanced AI Moderation Models
+
+model ContentAnalysis {
+  id                  String                  @id @default(uuid())
+  contentType         String                  // "message", "profile", "story", "chatMessage"
+  contentId           String
+  userId              String?
+  classification      ContentClassification
+  confidence          Int                     // 0-100
+  severity            ModerationSeverity
+  toxicityScore       Int                     // 0-100
+  spamScore           Int                     // 0-100
+  scamScore           Int                     // 0-100
+  hateSpeechScore     Int                     // 0-100
+  sexualContentScore  Int                     // 0-100
+  violenceScore       Int                     // 0-100
+  reasons             String[]
+  suggestedAction     String                  // "NONE", "WARNING", "HIDE", "RESTRICT", "BAN"
+  requiresHumanReview Boolean                 @default(false)
+  reviewedAt          DateTime?
+  reviewedBy          String?
+  createdAt           DateTime                @default(now())
+
+  user                User?                   @relation(fields: [userId], references: [id], onDelete: SetNull)
+  reviewQueue         ModerationReviewQueue?
+
+  @@index([contentType, contentId])
+  @@index([userId, createdAt])
+  @@index([severity, createdAt])
+  @@index([requiresHumanReview])
+  @@index([classification])
+}
+
+model ModerationReviewQueue {
+  id                  String                  @id @default(uuid())
+  contentAnalysisId   String                  @unique
+  userId              String?
+  contentType         String
+  contentId           String
+  status              ReviewStatus            @default(PENDING)
+  priority            Int                     @default(0)      // 0=low, 1=medium, 2=high, 3=critical
+  assignedTo          String?                 // admin userId
+  notes               String?
+  actionTaken         String?
+  createdAt           DateTime                @default(now())
+  assignedAt          DateTime?
+  resolvedAt          DateTime?
+
+  contentAnalysis     ContentAnalysis         @relation(fields: [contentAnalysisId], references: [id], onDelete: Cascade)
+  user                User?                   @relation("ModerationReviewQueueUser", fields: [userId], references: [id], onDelete: SetNull)
+  assignedAdmin       User?                   @relation("ModerationReviewQueueAdmin", fields: [assignedTo], references: [id], onDelete: SetNull)
+
+  @@index([status, createdAt])
+  @@index([priority, status])
+  @@index([assignedTo])
+  @@index([userId])
+}
+
+model ModerationAction {
+  id                  String                  @id @default(uuid())
+  userId              String
+  targetUserId        String
+  actionType          String                  // "WARNING", "HIDE_CONTENT", "RESTRICT", "SUSPEND", "BAN"
+  reason              String
+  severity            ModerationSeverity
+  duration            Int?                    // in days, null for permanent
+  contentAnalysisId   String?
+  metadata            Json?
+  createdBy           String                  // admin userId
+  createdAt           DateTime                @default(now())
+  expiresAt           DateTime?
+
+  user                User                    @relation("ModerationActionUser", fields: [userId], references: [id], onDelete: Cascade)
+  targetUser          User                    @relation("ModerationActionTarget", fields: [targetUserId], references: [id], onDelete: Cascade)
+  createdByAdmin      User                    @relation("ModerationActionAdmin", fields: [createdBy], references: [id], onDelete: Cascade)
+
+  @@index([userId, createdAt])
+  @@index([targetUserId, createdAt])
+  @@index([actionType])
+  @@index([expiresAt])
+}
+
+model UserBehaviorMetric {
+  id                  String                  @id @default(uuid())
+  userId              String                  @unique
+  messagesLast24h     Int                     @default(0)
+  messagesLastWeek    Int                     @default(0)
+  chatMessages24h     Int                     @default(0)
+  chatMessagesWeek    Int                     @default(0)
+  reportsReceived     Int                     @default(0)
+  reportsReceivedMonth Int                    @default(0)
+  spamBlocks          Int                     @default(0)
+  behaviorRiskScore   Int                     @default(0)      // 0-100
+  flagsData           Json                    // JSON object with flags
+  lastAnalyzedAt      DateTime                @default(now())
+  updatedAt           DateTime                @updatedAt
+
+  user                User                    @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([behaviorRiskScore, updatedAt])
+  @@index([userId])
+}
+
+model ModerationMetrics {
+  id                  String                  @id @default(uuid())
+  date                DateTime                @unique           // Day snapshot
+  totalContentAnalyzed Int                    @default(0)
+  toxicDetected       Int                     @default(0)
+  hateSpeechDetected  Int                     @default(0)
+  spamDetected        Int                     @default(0)
+  scamDetected        Int                     @default(0)
+  sexualContentDetected Int                  @default(0)
+  actionsApproved     Int                     @default(0)
+  actionsRejected     Int                     @default(0)
+  averageReviewTime   Int                     @default(0)        // in seconds
+  autoActionsTaken    Int                     @default(0)
+  createdAt           DateTime                @default(now())
+
+  @@index([date])
+}
+
+model CoordinatedAbuseAlert {
+  id                  String                  @id @default(uuid())
+  targetUserId        String
+  targetUserPhone     String?
+  reportCount         Int
+  uniqueReportersCount Int
+  pattern             String                  // reason pattern
+  confidence          Int                     // 0-100
+  status              ReviewStatus            @default(PENDING)
+  investigatedBy      String?
+  notes               String?
+  detectedAt          DateTime                @default(now())
+  resolvedAt          DateTime?
+
+  targetUser          User                    @relation("CoordinatedAbuseAlertTarget", fields: [targetUserId], references: [id], onDelete: Cascade)
+  investigator        User?                   @relation("CoordinatedAbuseAlertInvestigator", fields: [investigatedBy], references: [id], onDelete: SetNull)
+
+  @@index([targetUserId, detectedAt])
+  @@index([confidence, detectedAt])
+  @@index([status])
+}
+
+// ==================== LIVE STREAMING MODELS ====================
+
+model LiveStream {
+  id                String        @id @default(uuid())
+  broadcasterId     String
+  title             String
+  description       String?
+  thumbnailUrl      String?
+  agoraChannelId    String        @unique        // Agora SDK channel
+  agoraResourceId   String?                      // Recording resource ID
+  status            StreamStatus  @default(SCHEDULED)
+  visibility        PrivacyMode   @default(PUBLIC)
+  allowComments     Boolean       @default(true)
+  categoryId        String?                      // e.g., "music", "gaming", "cooking"
+  tags              String[]      @default([])
+  scheduledAt       DateTime?
+  startedAt         DateTime?
+  endedAt           DateTime?
+  maxConcurrentViewers Int?
+  peakViewerCount   Int           @default(0)
+  viewerCountNow    Int           @default(0)
+  totalViews        Int           @default(0)
+  duration          Int?                         // in seconds
+  recordingUrl      String?
+  isRecorded        Boolean       @default(false)
+  createdAt         DateTime      @default(now())
+  updatedAt         DateTime      @updatedAt
+
+  broadcaster       User          @relation("LiveStreamBroadcaster", fields: [broadcasterId], references: [id], onDelete: Cascade)
+  viewers           LiveStreamViewer[]
+  comments          LiveStreamComment[]
+
+  @@index([status, createdAt])
+  @@index([broadcasterId, createdAt])
+  @@index([visibility, status])
+  @@index([createdAt])
+}
+
+model LiveStreamViewer {
+  id                String        @id @default(uuid())
+  streamId          String
+  viewerId          String
+  joinedAt          DateTime      @default(now())
+  leftAt            DateTime?
+  watchedDuration   Int           @default(0)      // in seconds
+  reacted           Boolean       @default(false)
+
+  stream            LiveStream    @relation(fields: [streamId], references: [id], onDelete: Cascade)
+  viewer            User          @relation(fields: [viewerId], references: [id], onDelete: Cascade)
+
+  @@unique([streamId, viewerId])
+  @@index([streamId, joinedAt])
+  @@index([viewerId, joinedAt])
+}
+
+model LiveStreamComment {
+  id                String        @id @default(uuid())
+  streamId          String
+  userId            String
+  text              String
+  createdAt         DateTime      @default(now())
+
+  stream            LiveStream    @relation(fields: [streamId], references: [id], onDelete: Cascade)
+
+  @@index([streamId, createdAt])
+}
+
+// ==================== VIDEO CALL MODELS ====================
+
+model VideoCall {
+  id                String        @id @default(uuid())
+  initiatorId       String
+  recipientId       String
+  type              CallType      @default(VIDEO)
+  status            CallStatus    @default(RINGING)
+  direction         CallDirection @default(OUTGOING)
+  agoraChannelId    String        @unique         // Agora SDK channel
+  agoraToken        String?                       // Temporary access token
+  startedAt         DateTime?
+  endedAt           DateTime?
+  duration          Int?                          // in seconds
+  recordingUrl      String?
+  isRecorded        Boolean       @default(false)
+  wasAnswered       Boolean       @default(false)
+  rejectionReason   String?                       // "DECLINED", "BUSY", "UNREACHABLE"
+  createdAt         DateTime      @default(now())
+
+  initiator         User          @relation("VideoCallInitiator", fields: [initiatorId], references: [id], onDelete: Cascade)
+  recipient         User          @relation("VideoCallRecipient", fields: [recipientId], references: [id], onDelete: Cascade)
+  participants      VideoCallParticipant[]
+  recordings        CallRecording[]
+
+  @@index([initiatorId, createdAt])
+  @@index([recipientId, createdAt])
+  @@index([status, createdAt])
+}
+
+model VideoCallParticipant {
+  id                String        @id @default(uuid())
+  callId            String
+  userId            String
+  joinedAt          DateTime      @default(now())
+  leftAt            DateTime?
+  agoraUid          Int                          // Agora UID (must be integer)
+  audioEnabled      Boolean       @default(true)
+  videoEnabled      Boolean       @default(true)
+  screenSharing     Boolean       @default(false)
+  isMuted           Boolean       @default(false)
+  networkQuality    Int           @default(0)    // 0-6, where 0 is unknown, 1 is excellent
+
+  call              VideoCall     @relation(fields: [callId], references: [id], onDelete: Cascade)
+  user              User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([callId, userId])
+  @@index([callId, joinedAt])
+  @@index([userId, joinedAt])
+}
+
+model CallRecording {
+  id                String        @id @default(uuid())
+  callId            String
+  recordingUrl      String
+  duration          Int                          // in seconds
+  fileSize          Int                          // in bytes
+  storageProvider   String        @default("cloudinary")  // "cloudinary", "s3", "azure"
+  createdAt         DateTime      @default(now())
+
+  call              VideoCall     @relation(fields: [callId], references: [id], onDelete: Cascade)
+
+  @@index([callId])
+  @@index([createdAt])
+}

@@ -1,0 +1,31 @@
+import { NextFunction, Response } from "express";
+import { AuthRequest } from "./nextalkauth";
+import { writeAuditLog } from "../services/nextalkaudit.service";
+
+export function auditTrail(req: AuthRequest, res: Response, next: NextFunction): void {
+  const start = Date.now();
+
+  res.on("finish", async () => {
+    if (!["POST", "PUT", "PATCH", "DELETE"].includes(req.method)) {
+      return;
+    }
+
+    const action = `${req.method} ${req.path}`;
+    try {
+      await writeAuditLog({
+        userId: req.user?.userId,
+        action,
+        method: req.method,
+        path: req.originalUrl,
+        ipAddress: req.ip,
+        userAgent: req.get("user-agent"),
+        statusCode: res.statusCode,
+        metadata: { durationMs: Date.now() - start }
+      });
+    } catch (error) {
+      console.warn("[AUDIT] Echec ecriture journal:", (error as Error).message);
+    }
+  });
+
+  next();
+}

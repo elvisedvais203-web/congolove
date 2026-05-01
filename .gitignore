@@ -1,0 +1,13 @@
+node_modules/
+.env
+.env.*
+.next/
+*.tsbuildinfo
+dist/
+coverage/
+*.log
+.DS_Store
+.redis-data/
+tmp/
+apps/frontend/.next-run/
+mobile/android/NextalkMobileAndroid/.gradle/

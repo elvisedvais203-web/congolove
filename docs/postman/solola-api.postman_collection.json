@@ -1,0 +1,161 @@
+{
+  "info": {
+    "name": "Solola API - MVP + Media Signed Upload",
+    "_postman_id": "5f0f7723-62c2-4f50-8fd7-0ab3a06d7766",
+    "description": "Collection principale pour auth, social, chat, moderation et media upload signe.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    { "key": "baseUrl", "value": "http://localhost:4000" },
+    { "key": "accessToken", "value": "" },
+    { "key": "csrfToken", "value": "" },
+    { "key": "chatId", "value": "" },
+    { "key": "postId", "value": "" },
+    { "key": "targetUserId", "value": "" }
+  ],
+  "item": [
+    {
+      "name": "Health",
+      "item": [
+        {
+          "name": "GET /health",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/health"
+          }
+        },
+        {
+          "name": "GET /ready",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/ready"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Auth",
+      "item": [
+        {
+          "name": "POST /auth/register",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"new@solola.app\",\n  \"password\": \"Password123!\",\n  \"displayName\": \"New User\"\n}"
+            },
+            "url": "{{baseUrl}}/auth/register"
+          }
+        },
+        {
+          "name": "POST /auth/login",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"admin@solola.app\",\n  \"password\": \"Password123!\"\n}"
+            },
+            "url": "{{baseUrl}}/auth/login"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Social",
+      "item": [
+        {
+          "name": "GET /social/feed",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{accessToken}}" }],
+            "url": "{{baseUrl}}/social/feed"
+          }
+        },
+        {
+          "name": "POST /social/posts/:postId/like",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{accessToken}}" },
+              { "key": "x-csrf-token", "value": "{{csrfToken}}" }
+            ],
+            "url": "{{baseUrl}}/social/posts/{{postId}}/like"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Chat",
+      "item": [
+        {
+          "name": "GET /chats/:chatId/messages",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{accessToken}}" }],
+            "url": "{{baseUrl}}/chats/{{chatId}}/messages"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Media",
+      "item": [
+        {
+          "name": "POST /media/upload/sign",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{accessToken}}" },
+              { "key": "x-csrf-token", "value": "{{csrfToken}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"folder\": \"posts\",\n  \"resourceType\": \"image\"\n}"
+            },
+            "url": "{{baseUrl}}/media/upload/sign"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Moderation Admin",
+      "item": [
+        {
+          "name": "POST /moderation/ai/analyze",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{accessToken}}" },
+              { "key": "x-csrf-token", "value": "{{csrfToken}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"text\": \"message a analyser\"\n}"
+            },
+            "url": "{{baseUrl}}/moderation/ai/analyze"
+          }
+        },
+        {
+          "name": "POST /moderation/admin/users/:userId/restriction (SUPERADMIN)",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{accessToken}}" },
+              { "key": "x-csrf-token", "value": "{{csrfToken}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"reason\": \"abuse\",\n  \"restrictedUntil\": null\n}"
+            },
+            "url": "{{baseUrl}}/moderation/admin/users/{{targetUserId}}/restriction"
+          }
+        }
+      ]
+    }
+  ]
+}
