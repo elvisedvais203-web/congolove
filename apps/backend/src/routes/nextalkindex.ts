@@ -19,8 +19,6 @@ import paymentWebhookRoutes from "./nextalkpayment-webhook.routes";
 import usernameRoutes from "./nextalkusername.routes";
 import contactsRoutes from "./nextalkcontacts.routes";
 import privacyRoutes from "./nextalkprivacy.routes";
-import liveStreamRoutes from "./nextalklivestream.routes";
-import videoCallRoutes from "./nextalkvideocall.routes";
 import { prisma } from "../config/nextalkdb";
 import { redis } from "../config/nextalkredis";
 import { env } from "../config/nextalkenv";
@@ -84,7 +82,6 @@ router.use("/webhooks/payments", paymentWebhookRoutes);
 router.use("/username", usernameRoutes);
 router.use("/contacts", contactsRoutes);
 router.use("/privacy", privacyRoutes);
-router.use("/live/streams", liveStreamRoutes);
-router.use("/video/calls", videoCallRoutes);
 
 export default router;
+

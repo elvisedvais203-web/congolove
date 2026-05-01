@@ -154,6 +154,7 @@ export async function getReviewQueue(req: AuthRequest, res: Response) {
             select: {
               id: true,
               phone: true,
+              email: true,
               profile: { select: { displayName: true } }
             }
           },
@@ -161,6 +162,7 @@ export async function getReviewQueue(req: AuthRequest, res: Response) {
             select: {
               id: true,
               phone: true,
+              email: true,
               profile: { select: { displayName: true } }
             }
           }
@@ -655,3 +657,4 @@ export async function bulkAnalyzeMessages(req: AuthRequest, res: Response) {
     res.status(500).json({ message: "Erreur lors de l'analyse groupée" });
   }
 }
+
