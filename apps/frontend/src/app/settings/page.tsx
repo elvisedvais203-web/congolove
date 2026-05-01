@@ -25,7 +25,7 @@ import {
   getConversations
 } from "../../services/nextalkchat";
 
-type SettingsTab = "compte" | "discussion" | "confidentialite" | "media" | "notifications";
+type SettingsTab = "compte" | "discussion" | "confidentialite" | "media" | "notifications" | "securite" | "abonnement";
 type DangerAction = "clear" | "delete" | "account";
 
 function SettingSwitch({
@@ -150,6 +150,9 @@ export default function SettingsPage() {
   const [geoBusy, setGeoBusy] = useState(false);
   const [dangerAction, setDangerAction] = useState<DangerAction | null>(null);
   const [dangerValue, setDangerValue] = useState("");
+  const [planTier, setPlanTier] = useState<"FREE" | "PRO">("FREE");
+  const [twoFaEnabled, setTwoFaEnabled] = useState(false);
+  const [sessionLock, setSessionLock] = useState(false);
 
   const setPref = <K extends keyof UserPreferences>(key: K, value: UserPreferences[K]) => {
     setPrefs((prev) => ({ ...prev, [key]: value }));
@@ -381,7 +384,9 @@ export default function SettingsPage() {
       { id: "discussion" as const, label: "Discussions" },
       { id: "confidentialite" as const, label: "Confidentialité" },
       { id: "media" as const, label: "Médias" },
-      { id: "notifications" as const, label: "Notifications" }
+      { id: "notifications" as const, label: "Notifications" },
+      { id: "securite" as const, label: "Sécurité" },
+      { id: "abonnement" as const, label: "Abonnement" }
     ],
     []
   );
@@ -682,6 +687,89 @@ export default function SettingsPage() {
               <button onClick={() => setStatus("Paiements et commandes relies au module wallet/freemium deja en place.")}
                 className="w-full rounded-xl border border-white/10 bg-white/5 px-4 py-2 text-left text-sm text-white hover:bg-white/10">
                 Commandes et paiements
+              </button>
+            </SettingCard>
+          </div>
+        )}
+
+        {tab === "securite" && (
+          <div className="grid gap-4 xl:grid-cols-2">
+            <SettingCard title="Protection du compte">
+              <SettingSwitch
+                label="Double authentification (2FA)"
+                description="Code secondaire demandé à la connexion."
+                checked={twoFaEnabled}
+                onChange={(value) => {
+                  setTwoFaEnabled(value);
+                  setStatus(value ? "2FA activée (étape backend OTP/app à finaliser)." : "2FA désactivée.");
+                }}
+              />
+              <SettingSwitch
+                label="Verrouillage session par code"
+                description="Demander un code local pour ouvrir les discussions."
+                checked={sessionLock}
+                onChange={(value) => {
+                  setSessionLock(value);
+                  setStatus(value ? "Verrouillage session activé." : "Verrouillage session désactivé.");
+                }}
+              />
+              <button
+                onClick={() => setStatus("Audit sécurité lancé: sessions, appareils, activité suspecte.")}
+                className="w-full rounded-xl border border-white/10 bg-white/5 px-4 py-2 text-left text-sm text-white hover:bg-white/10"
+              >
+                Vérifier les sessions actives
+              </button>
+            </SettingCard>
+            <SettingCard title="Modération & anti-abus">
+              <button onClick={() => setStatus("Mode anti-spam IA renforcé activé.")} className="w-full rounded-xl border border-white/10 bg-white/5 px-4 py-2 text-left text-sm text-white hover:bg-white/10">
+                Renforcer anti-spam IA
+              </button>
+              <button onClick={() => setStatus("Filtre contenu sensible mis à jour.")} className="w-full rounded-xl border border-white/10 bg-white/5 px-4 py-2 text-left text-sm text-white hover:bg-white/10">
+                Filtre contenu sensible
+              </button>
+              <button onClick={() => setStatus("Paramètres de blocage/signalement prêts.")} className="w-full rounded-xl border border-white/10 bg-white/5 px-4 py-2 text-left text-sm text-white hover:bg-white/10">
+                Blocages et signalements
+              </button>
+            </SettingCard>
+          </div>
+        )}
+
+        {tab === "abonnement" && (
+          <div className="grid gap-4 xl:grid-cols-2">
+            <SettingCard title="Offres Solola">
+              <div className="grid gap-2">
+                <button
+                  onClick={() => {
+                    setPlanTier("FREE");
+                    setStatus("Plan Free activé.");
+                  }}
+                  className={`rounded-2xl border px-4 py-3 text-left text-sm ${planTier === "FREE" ? "border-emerald-400/40 bg-emerald-500/10 text-emerald-100" : "border-white/15 bg-white/5 text-slate-200"}`}
+                >
+                  Free — messagerie, posts, reels, stories, groupes/canaux basiques
+                </button>
+                <button
+                  onClick={() => {
+                    setPlanTier("PRO");
+                    setStatus("Plan Pro sélectionné. Passez au module paiement pour finaliser.");
+                  }}
+                  className={`rounded-2xl border px-4 py-3 text-left text-sm ${planTier === "PRO" ? "border-neoblue/50 bg-neoblue/15 text-neoblue" : "border-white/15 bg-white/5 text-slate-200"}`}
+                >
+                  Pro — analytics avancées, diffusion premium, outils business, priorités support
+                </button>
+              </div>
+            </SettingCard>
+            <SettingCard title="Avantages Pro (style Telegram Premium)">
+              <ul className="space-y-2 text-sm text-slate-200">
+                <li>• Limites plus élevées (groupes, canaux, fichiers)</li>
+                <li>• Personnalisation avancée (thèmes, badges, profil pro)</li>
+                <li>• Outils créateurs (stats, monétisation, diffusion)</li>
+                <li>• Accès prioritaire aux nouvelles fonctionnalités IA</li>
+              </ul>
+              <button
+                onClick={() => setStatus("Checkout abonnement prêt (connecter provider paiement).")}
+                className="mt-2 w-full rounded-xl border border-neoblue/40 bg-neoblue/10 px-4 py-2 text-left text-sm text-neoblue hover:bg-neoblue/20"
+              >
+                Passer à Solola Pro
               </button>
             </SettingCard>
           </div>

@@ -41,6 +41,7 @@ type Props = {
 };
 
 type ConversationMode = "all" | "private" | "group";
+type ConversationPreset = "all" | "groups" | "work" | "bots";
 
 type UploadDraft = {
   type: ChatMessageType;
@@ -115,6 +116,7 @@ export function UltraTelegramChat({ contactId, initialShowArchived = false }: Pr
   const [nextCursor, setNextCursor] = useState<number | null>(null);
   const [conversationQuery, setConversationQuery] = useState("");
   const [conversationMode, setConversationMode] = useState<ConversationMode>("all");
+  const [conversationPreset, setConversationPreset] = useState<ConversationPreset>("all");
   const [messageQuery, setMessageQuery] = useState("");
   const [searchHits, setSearchHits] = useState<ChatMessage[] | null>(null);
   const [text, setText] = useState("");
@@ -180,12 +182,22 @@ export function UltraTelegramChat({ contactId, initialShowArchived = false }: Pr
         return false;
       }
       if (!q) {
+        if (conversationPreset === "all") return true;
+        if (conversationPreset === "groups") return conversation.kind === "GROUP";
+        if (conversationPreset === "work") {
+          const stack = `${conversation.title} ${conversation.lastMessage?.text ?? ""}`.toLowerCase();
+          return stack.includes("work") || stack.includes("travail") || stack.includes("business");
+        }
+        if (conversationPreset === "bots") {
+          const stack = `${conversation.title} ${conversation.lastMessage?.text ?? ""}`.toLowerCase();
+          return stack.includes("bot") || stack.includes("assistant");
+        }
         return true;
       }
       const stack = `${conversation.title} ${conversation.members.map((member) => member.displayName).join(" ")} ${conversation.lastMessage?.text ?? ""}`.toLowerCase();
       return stack.includes(q);
     });
-  }, [conversationMode, conversationQuery, conversations]);
+  }, [conversationMode, conversationPreset, conversationQuery, conversations]);
 
   const canCall = useMemo(() => activeChat?.kind === "PRIVATE" && Boolean(me?.id), [activeChat, me?.id]);
 
@@ -958,6 +970,23 @@ export function UltraTelegramChat({ contactId, initialShowArchived = false }: Pr
           </button>
           {callNotice && <span className="rounded-full bg-white/5 px-3 py-2 text-xs text-slate-300">{callNotice}</span>}
         </div>
+        <div className="mb-4 flex flex-wrap gap-2 rounded-2xl border border-white/10 bg-white/5 p-2">
+          {([
+            { id: "all", label: "All" },
+            { id: "groups", label: "Groups" },
+            { id: "work", label: "WORK" },
+            { id: "bots", label: "Bots" }
+          ] as const).map((item) => (
+            <button
+              key={item.id}
+              type="button"
+              onClick={() => setConversationPreset(item.id)}
+              className={`rounded-full px-3 py-1.5 text-xs ${conversationPreset === item.id ? "bg-neoblue text-[#07101f]" : "bg-white/10 text-slate-300"}`}
+            >
+              {item.label}
+            </button>
+          ))}
+        </div>
 
         {showGroupComposer && (
           <div className="glass mb-4 rounded-3xl p-4">
@@ -995,7 +1024,7 @@ export function UltraTelegramChat({ contactId, initialShowArchived = false }: Pr
 
         <div className="grid gap-4 lg:grid-cols-[360px_1fr]">
           <aside className="glass rounded-3xl p-3">
-            <div className="max-h-[72vh] space-y-2 overflow-y-auto pr-1">
+            <div className="max-h-[72vh] min-h-[72vh] space-y-2 overflow-y-auto pr-1">
               {visibleConversations.map((conversation) => {
                 const active = conversation.id === activeChatId;
                 return (
@@ -1027,7 +1056,7 @@ export function UltraTelegramChat({ contactId, initialShowArchived = false }: Pr
             </div>
           </aside>
 
-          <div className="glass flex min-h-[72vh] flex-col rounded-3xl p-4">
+          <div className="glass flex min-h-[72vh] max-h-[72vh] flex-col rounded-3xl p-4">
             {!activeChat && <p className="text-sm text-slate-300">Choisissez un chat pour commencer.</p>}
 
             {activeChat && (
