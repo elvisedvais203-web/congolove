@@ -7,6 +7,7 @@ import { commentFeedPost, createFeedPost, getFeed, likeFeedPost, saveFeedPost } 
 import { createStory, getStoryFeed } from "../services/nextalkstories";
 import { fetchCsrfToken } from "../services/nextalksecurity";
 import api from "../lib/nextalkapi";
+import { SololaThemedLogo } from "../components/sololathemedlogo";
 
 type FeedComment = {
   id: string;
@@ -93,6 +94,14 @@ export default function HomePage() {
   }, []);
 
   useEffect(() => {
+    return () => {
+      if (postMediaPreview) {
+        URL.revokeObjectURL(postMediaPreview);
+      }
+    };
+  }, [postMediaPreview]);
+
+  useEffect(() => {
     let startY = 0;
     let pulling = false;
 
@@ -163,6 +172,7 @@ export default function HomePage() {
         {
           id: `local-${Date.now()}`,
           content,
+          mediaUrl: mediaUrl ?? null,
           createdAt: new Date().toISOString(),
           author: { id: "me", displayName: "Moi" },
           likesCount: 0,
@@ -299,6 +309,82 @@ export default function HomePage() {
       <div className="grid gap-4 lg:grid-cols-[1fr_340px]">
         <div className="space-y-4">
           <div className="glass rounded-3xl p-4">
+            <div className="mb-3 flex items-center gap-3">
+              <SololaThemedLogo width={40} height={40} className="rounded-xl" priority />
+              <div>
+                <p className="text-sm font-semibold text-white">Nouvelle publication</p>
+                <p className="text-xs text-slate-400">Partage une photo, une video ou un message.</p>
+              </div>
+            </div>
+            <textarea
+              value={composer}
+              onChange={(e) => setComposer(e.target.value)}
+              className="input-neon min-h-24 w-full rounded-2xl px-4 py-3 text-sm"
+              placeholder="Quoi de neuf aujourd'hui ?"
+              maxLength={1600}
+            />
+            <div className="mt-3 flex flex-wrap items-center gap-2">
+              <label className="btn-outline-neon cursor-pointer rounded-xl px-3 py-2 text-xs font-semibold">
+                Ajouter media
+                <input
+                  type="file"
+                  accept="image/*,video/*"
+                  className="hidden"
+                  onChange={(e) => {
+                    const file = e.target.files?.[0] ?? null;
+                    e.target.value = "";
+                    setPostMediaFile(file);
+                    if (postMediaPreview) {
+                      URL.revokeObjectURL(postMediaPreview);
+                    }
+                    setPostMediaPreview(file ? URL.createObjectURL(file) : null);
+                  }}
+                />
+              </label>
+              <button
+                type="button"
+                onClick={() => void publishPost()}
+                disabled={busy || (!composer.trim() && !postMediaFile)}
+                className="btn-neon rounded-xl px-4 py-2 text-xs font-bold disabled:opacity-60"
+              >
+                {busy ? "Publication..." : "Publier"}
+              </button>
+              {postMediaFile ? (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setPostMediaFile(null);
+                    if (postMediaPreview) {
+                      URL.revokeObjectURL(postMediaPreview);
+                    }
+                    setPostMediaPreview(null);
+                  }}
+                  className="wa-pill rounded-xl px-3 py-2 text-xs"
+                >
+                  Retirer media
+                </button>
+              ) : null}
+            </div>
+            {busy && postUploadProgress > 0 ? (
+              <div className="mt-3 rounded-xl border border-white/10 bg-black/20 p-2">
+                <div className="h-2 w-full rounded-full bg-white/10">
+                  <div className="h-2 rounded-full bg-neoblue transition-all" style={{ width: `${postUploadProgress}%` }} />
+                </div>
+                <p className="mt-1 text-[11px] text-slate-300">Upload publication: {postUploadProgress}%</p>
+              </div>
+            ) : null}
+            {postMediaPreview ? (
+              <div className="mt-3 overflow-hidden rounded-2xl border border-white/10 bg-black/20">
+                {postMediaFile?.type.startsWith("video/") ? (
+                  <video src={postMediaPreview} controls className="max-h-[520px] w-full object-cover" />
+                ) : (
+                  <img src={postMediaPreview} alt="Apercu publication" className="max-h-[520px] w-full object-cover" />
+                )}
+              </div>
+            ) : null}
+          </div>
+
+          <div className="glass rounded-3xl p-4">
             <div className="flex gap-4 overflow-x-auto pb-4 pt-2 scrollbar-hide">
               <button
                 onClick={() => storyInputRef.current?.click()}
@@ -365,7 +451,10 @@ export default function HomePage() {
             >
               <div className="mb-3 flex items-center justify-between">
                 <div>
-                  <p className="font-semibold text-white">{post.author.displayName}</p>
+                  <div className="flex items-center gap-2">
+                    <SololaThemedLogo width={26} height={26} className="rounded-md opacity-90" />
+                    <p className="font-semibold text-white">{post.author.displayName}</p>
+                  </div>
                   <p className="text-xs text-slate-400">
                     {new Date(post.createdAt).toLocaleString("fr-FR", { day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit" })}
                   </p>

@@ -7,6 +7,7 @@ import { AuthGuard } from "../../components/nextalkauthguard";
 import { fetchCsrfToken } from "../../services/nextalksecurity";
 import { getFeed, getSavedFeed } from "../../services/nextalksocial";
 import { getStoredUser } from "../../lib/nextalksession";
+import { SololaThemedLogo } from "../../components/sololathemedlogo";
 
 async function fileToDataUrl(file: File) {
   return await new Promise<string>((resolve, reject) => {
@@ -269,7 +270,9 @@ export default function ProfilePage() {
                   {profile?.user?.photos?.[0]?.url ? (
                     <img src={profile.user.photos[0].url} alt="Avatar" className="h-20 w-20 rounded-full object-cover border border-white/20" />
                   ) : (
-                    <div className="h-20 w-20 rounded-full bg-white/10 border border-white/20" />
+                    <div className="flex h-20 w-20 items-center justify-center rounded-full border border-white/20 bg-white/10">
+                      <SololaThemedLogo width={52} height={52} className="rounded-full opacity-90" />
+                    </div>
                   )}
                   <div>
                     <p className="font-heading text-2xl text-white">{profile?.displayName ?? "Utilisateur"}</p>
@@ -386,7 +389,9 @@ export default function ProfilePage() {
                 {profile?.user?.photos?.[0]?.url ? (
                   <img src={profile.user.photos[0].url} alt="Photo profil" className="h-14 w-14 rounded-full object-cover" />
                 ) : (
-                  <div className="h-14 w-14 rounded-full bg-white/10" />
+                  <div className="flex h-14 w-14 items-center justify-center rounded-full bg-white/10">
+                    <SololaThemedLogo width={34} height={34} className="rounded-full opacity-90" />
+                  </div>
                 )}
                 <label className="cursor-pointer rounded-xl border border-white/20 px-3 py-2 text-xs text-slate-200">
                   {photoUploading ? "Upload..." : "Changer photo"}

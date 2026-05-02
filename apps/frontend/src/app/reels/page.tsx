@@ -5,6 +5,7 @@ import { AuthGuard } from "../../components/nextalkauthguard";
 import { SectionHeader } from "../../components/nextalksectionheader";
 import { commentFeedPost, getFeed, likeFeedPost } from "../../services/nextalksocial";
 import { fetchCsrfToken } from "../../services/nextalksecurity";
+import { SololaThemedLogo } from "../../components/sololathemedlogo";
 
 type ReelItem = {
   id: string;
@@ -121,7 +122,10 @@ export default function ReelsPage() {
   return (
     <AuthGuard>
       <section className="space-y-4 pb-20 animate-fade-in">
-        <SectionHeader title="Reels" accent="violet" />
+        <div className="flex items-center justify-between gap-3">
+          <SectionHeader title="Reels" accent="violet" />
+          <SololaThemedLogo width={40} height={40} className="rounded-xl opacity-95" />
+        </div>
 
         {loading ? <div className="glass rounded-3xl p-4 text-sm text-slate-300">Chargement des reels...</div> : null}
 

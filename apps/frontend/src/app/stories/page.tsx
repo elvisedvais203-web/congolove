@@ -10,6 +10,7 @@ import { broadcastToChannel, createChannel, getConversations, subscribeToChannel
 import Image from "next/image";
 import api from "../../lib/nextalkapi";
 import { SectionHeader } from "../../components/nextalksectionheader";
+import { SololaThemedLogo } from "../../components/sololathemedlogo";
 
 type Story = {
   id: string;
@@ -340,10 +341,13 @@ export default function StoriesPage() {
       )}
 
       <section className="pb-20 animate-fade-in">
-        <SectionHeader
-          title="Stories et canaux"
-          accent="violet"
-        />
+        <div className="flex items-center justify-between gap-3">
+          <SectionHeader
+            title="Stories et canaux"
+            accent="violet"
+          />
+          <SololaThemedLogo width={40} height={40} className="rounded-xl opacity-95" />
+        </div>
         {/* Barre stories */}
         <div className="flex gap-4 overflow-x-auto pb-4 pt-2 scrollbar-hide">
           {/* Ajouter une story */}
@@ -607,7 +611,10 @@ export default function StoriesPage() {
           <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/60 p-4 md:items-center">
             <div className="glass w-full max-w-lg rounded-3xl p-4">
               <div className="mb-3 flex items-center justify-between">
-                <h4 className="text-base font-semibold text-white">Créer un canal</h4>
+                <div className="flex items-center gap-2">
+                  <SololaThemedLogo width={24} height={24} className="rounded-md" />
+                  <h4 className="text-base font-semibold text-white">Créer un canal</h4>
+                </div>
                 <button onClick={() => setCreateChannelModalOpen(false)} className="wa-pill px-3 py-1 text-xs" type="button">Fermer</button>
               </div>
               <input
@@ -644,7 +651,10 @@ export default function StoriesPage() {
           <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/60 p-4 md:items-center">
             <div className="glass w-full max-w-xl rounded-3xl p-4">
               <div className="mb-3 flex items-center justify-between">
-                <h4 className="text-base font-semibold text-white">Publier dans un canal</h4>
+                <div className="flex items-center gap-2">
+                  <SololaThemedLogo width={24} height={24} className="rounded-md" />
+                  <h4 className="text-base font-semibold text-white">Publier dans un canal</h4>
+                </div>
                 <button onClick={() => setBroadcastModalOpen(false)} className="wa-pill px-3 py-1 text-xs" type="button">Fermer</button>
               </div>
               <div className="max-h-40 space-y-2 overflow-y-auto">
