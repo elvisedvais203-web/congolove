@@ -20,6 +20,10 @@ function formatPhoneInput(value: string) {
   return `+${value.slice(1).replace(/[^\d]/g, "")}`;
 }
 
+function isValidEmail(value: string) {
+  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value.trim());
+}
+
 const FIREBASE_CONFIGURED = Boolean(
   process.env.NEXT_PUBLIC_FIREBASE_API_KEY &&
     process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN &&
@@ -274,6 +278,14 @@ export default function AuthClientSimple() {
         return;
       }
 
+      if (!isValidEmail(email.trim())) {
+        setStatus(
+          "Utilise une adresse email valide pour ce champ (ex: prenom@gmail.com). L inscription par numero se passe dans l onglet Téléphone avec le code SMS."
+        );
+        setStatusType("error");
+        return;
+      }
+
       if (authMode === "register") {
         if (password.length < 8) {
           setStatus("Mot de passe trop court (minimum 8 caracteres).");
@@ -344,8 +356,14 @@ export default function AuthClientSimple() {
       );
       setStatusType("success");
     } catch (error: unknown) {
-      const e = error as { message?: string; response?: { data?: { message?: string } } };
-      setStatus(e?.response?.data?.message ?? e?.message ?? "Erreur.");
+      const e = error as { code?: string; message?: string; response?: { data?: { message?: string } } };
+      const raw = String(e?.message ?? "");
+      const net = e?.code === "ERR_NETWORK" || raw.toLowerCase().includes("network error");
+      setStatus(
+        net
+          ? "Connexion au serveur impossible. Verifie Internet, desactive VPN/parefeu qui bloquent, ou reessaie dans quelques minutes. Si ca continue, NEXT_PUBLIC_API_URL doit pointer vers l API Render : https://solola-api.onrender.com/api"
+          : (e?.response?.data?.message ?? raw) || "Erreur."
+      );
       setStatusType("error");
     } finally {
       setSubmittingEmail(false);
@@ -363,35 +381,57 @@ export default function AuthClientSimple() {
         : Boolean(emailTrimmed);
 
   return (
-    <div className="mx-auto flex min-h-[80vh] max-w-4xl items-center justify-center px-4 py-10">
-      <div className="grid w-full gap-5 lg:grid-cols-[1.2fr_0.8fr] lg:items-center">
-        <section className="hidden lg:block">
-          <div className="glass neon-border rounded-3xl p-8">
-            <div className="flex items-center gap-3">
-              <SololaThemedLogo width={54} height={54} className="rounded-2xl" priority sizes="54px" />
-              <div>
-                <h1 className="font-heading text-4xl font-bold text-white">Solola</h1>
-                <p className="mt-1 text-sm text-slate-300">Connecte-toi pour partager, publier et discuter.</p>
+    <div className="mx-auto flex min-h-[100svh] max-w-6xl items-stretch justify-center px-4 py-8 pb-14 md:py-12">
+      <div className="grid w-full gap-6 lg:grid-cols-[1.15fr_0.95fr] lg:items-stretch lg:gap-10">
+        <section className="relative order-2 hidden min-h-[420px] overflow-hidden rounded-[28px] border border-white/10 shadow-[0_26px_100px_rgba(0,0,0,0.55)] lg:order-1 lg:block lg:min-h-[560px]">
+          {/* Hero local (voir public/branding/auth-hero.jpg) */}
+          <img
+            src="/branding/auth-hero.jpg"
+            alt=""
+            className="absolute inset-0 h-full w-full object-cover"
+            decoding="async"
+          />
+          <div className="absolute inset-0 bg-gradient-to-b from-[#ff5f9bcc]/45 via-[#06070e]/20 to-[#06070ef2]" />
+          <div className="relative flex h-full min-h-[560px] flex-col justify-between p-8 lg:min-h-0 lg:p-10">
+            <div className="flex items-start justify-between gap-4">
+              <div className="flex items-center gap-3">
+                <SololaThemedLogo width={52} height={52} className="rounded-2xl ring-2 ring-white/35" priority sizes="52px" />
+                <div>
+                  <p className="font-heading text-3xl font-extrabold text-white drop-shadow-[0_6px_30px_rgba(0,0,0,0.45)]">Solola</p>
+                  <p className="mt-1 text-sm text-white/80">Stories • Reels • Messages</p>
+                </div>
               </div>
             </div>
-            <div className="mt-6 grid gap-3 md:grid-cols-2">
-              <div className="rounded-2xl border border-white/10 bg-black/20 p-4">
-                <p className="text-xs uppercase tracking-[0.18em] text-slate-400">Stories</p>
-                <p className="mt-2 text-sm text-slate-200">Publie des photos et vidéos qui expirent.</p>
-              </div>
-              <div className="rounded-2xl border border-white/10 bg-black/20 p-4">
-                <p className="text-xs uppercase tracking-[0.18em] text-slate-400">Reels</p>
-                <p className="mt-2 text-sm text-slate-200">Partage des vidéos courtes, likes et commentaires.</p>
-              </div>
-              <div className="rounded-2xl border border-white/10 bg-black/20 p-4 md:col-span-2">
-                <p className="text-xs uppercase tracking-[0.18em] text-slate-400">Messages & Canaux</p>
-                <p className="mt-2 text-sm text-slate-200">Discute et diffuse dans tes canaux (texte + médias).</p>
-              </div>
+
+            <div className="mt-10 max-w-xl">
+              <p className="font-heading text-4xl font-extrabold leading-[1.05] text-white drop-shadow-[0_10px_40px_rgba(0,0,0,0.55)]">
+                Tout ce qu’il te faut, dans une seule application.
+              </p>
+              <p className="mt-4 text-sm leading-relaxed text-white/80">
+                Publie, discute et partage comme sur Instagram avec ton identite Solola.
+              </p>
+            </div>
+
+            <div className="mt-10 grid grid-cols-3 gap-2 text-[11px] font-semibold uppercase tracking-[0.12em] text-white/85">
+              <span className="rounded-2xl border border-white/15 bg-black/35 px-3 py-2 backdrop-blur">Stories</span>
+              <span className="rounded-2xl border border-white/15 bg-black/35 px-3 py-2 backdrop-blur">Reels</span>
+              <span className="rounded-2xl border border-white/15 bg-black/35 px-3 py-2 backdrop-blur">Canaux</span>
             </div>
           </div>
         </section>
 
-        <section className="w-full animate-slide-up">
+        <div className="order-1 lg:order-2">
+          {/* Mobile hero (meme image) */}
+          <div className="relative mb-6 h-[220px] overflow-hidden rounded-[22px] border border-white/10 shadow-[0_18px_60px_rgba(0,0,0,0.45)] lg:hidden">
+            <img src="/branding/auth-hero.jpg" alt="" className="absolute inset-0 h-full w-full object-cover" decoding="async" />
+            <div className="absolute inset-0 bg-gradient-to-t from-black/75 via-black/25 to-transparent" />
+            <div className="absolute bottom-4 left-4 right-4">
+              <p className="font-heading text-2xl font-extrabold leading-tight text-white">Solola</p>
+              <p className="mt-1 text-xs text-white/80">Stories • Reels • Messages</p>
+            </div>
+          </div>
+
+          <section className="w-full animate-slide-up lg:flex lg:flex-col lg:justify-center">
           <div className="mx-auto w-full max-w-md">
             <div className="mb-4 text-center lg:hidden">
               <div className="mx-auto mb-3 flex w-full justify-center">
@@ -518,7 +558,7 @@ export default function AuthClientSimple() {
               ) : null}
 
               <div>
-                <label className="mb-1.5 block text-xs font-semibold uppercase tracking-widest text-[var(--muted)]">
+                <label className="mb-1.5 block text-xs font-semibold uppercase tracking-widest text-slate-500">
                   Numero telephone
                 </label>
                 <input
@@ -526,7 +566,7 @@ export default function AuthClientSimple() {
                   onChange={(e) =>
                     setPhoneNumber(formatPhoneInput(e.target.value))
                   }
-                  className="input-neon w-full rounded-2xl px-4 py-3.5 text-sm"
+                  className="w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm text-[#10172b] placeholder:text-slate-400 focus:border-slate-300 focus:outline-none focus:ring-2 focus:ring-[rgba(76,111,255,0.25)] disabled:opacity-60"
                   placeholder="+243..."
                   autoComplete="tel"
                   disabled={sending || verifying}
@@ -537,17 +577,17 @@ export default function AuthClientSimple() {
               <button
                 onClick={() => void sendCode()}
                 disabled={sending || verifying}
-                className="btn-neon w-full rounded-2xl py-3.5 text-sm font-bold tracking-wide disabled:opacity-60"
+                className="w-full rounded-xl bg-[#4c6fff] py-3 text-sm font-bold text-white shadow-[0_12px_30px_rgba(76,111,255,0.25)] transition hover:brightness-110 disabled:opacity-60"
               >
                 {sending ? "Envoi du code..." : "Envoyer le code"}
               </button>
 
               {confirmationResult && (
                 <>
-                  <div className="h-px bg-gradient-to-r from-transparent via-white/20 to-transparent" />
+                  <div className="h-px bg-slate-200" />
 
                   <div>
-                    <label className="mb-1.5 block text-xs font-semibold uppercase tracking-widest text-[var(--muted)]">
+                    <label className="mb-1.5 block text-xs font-semibold uppercase tracking-widest text-slate-500">
                       Code OTP
                     </label>
                     <input
@@ -555,7 +595,7 @@ export default function AuthClientSimple() {
                       onChange={(e) =>
                         setOtpCode(e.target.value.replace(/\D/g, "").slice(0, 6))
                       }
-                      className="input-neon w-full rounded-2xl px-4 py-3.5 text-sm font-mono text-center text-lg tracking-widest"
+                      className="w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-center font-mono text-lg tracking-widest text-[#10172b] placeholder:text-slate-400 focus:border-slate-300 focus:outline-none focus:ring-2 focus:ring-[rgba(76,111,255,0.25)] disabled:opacity-60"
                       placeholder="000000"
                       inputMode="numeric"
                       disabled={verifying}
@@ -565,7 +605,7 @@ export default function AuthClientSimple() {
                   <button
                     onClick={() => void verifyCode()}
                     disabled={sending || verifying}
-                    className="btn-outline-neon w-full rounded-2xl py-3.5 text-sm font-semibold disabled:opacity-60"
+                    className="w-full rounded-xl border border-[#4c6fff] bg-white py-3 text-sm font-semibold text-[#4c6fff] transition hover:bg-slate-50 disabled:opacity-60"
                   >
                     {verifying ? "Verification..." : "Verifier puis se connecter"}
                   </button>
@@ -667,6 +707,18 @@ export default function AuthClientSimple() {
                   </Link>
                   .
                 </p>
+              ) : authMode === "login" ? (
+                <p className="pt-1 text-[11px] leading-relaxed text-slate-500">
+                  En continuant, tu acceptes nos{" "}
+                  <Link className="text-slate-800 underline underline-offset-2" href="/legal/terms">
+                    conditions
+                  </Link>{" "}
+                  et notre{" "}
+                  <Link className="text-slate-800 underline underline-offset-2" href="/legal/privacy">
+                    politique de confidentialité
+                  </Link>
+                  .
+                </p>
               ) : null}
             </>
           )}
@@ -734,6 +786,7 @@ export default function AuthClientSimple() {
             </div>
           </div>
         </section>
+        </div>
       </div>
     </div>
   );
