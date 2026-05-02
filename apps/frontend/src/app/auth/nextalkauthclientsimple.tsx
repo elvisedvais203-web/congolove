@@ -475,6 +475,30 @@ export default function AuthClientSimple() {
               </div>
 
               <div className="mt-4 space-y-3">
+                <div className="flex flex-col gap-2">
+                  <button
+                    type="button"
+                    disabled
+                    className="w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm font-semibold text-slate-500 opacity-70"
+                    title="Bientôt disponible"
+                  >
+                    Continuer avec Google
+                  </button>
+                  <button
+                    type="button"
+                    disabled
+                    className="w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm font-semibold text-slate-500 opacity-70"
+                    title="Bientôt disponible"
+                  >
+                    Continuer avec Apple
+                  </button>
+                </div>
+
+                <div className="my-1 flex items-center gap-3">
+                  <span className="h-px flex-1 bg-slate-200" />
+                  <span className="text-[11px] font-semibold uppercase tracking-[0.22em] text-slate-400">ou</span>
+                  <span className="h-px flex-1 bg-slate-200" />
+                </div>
 
           {tab === "phone" ? (
             <>
@@ -556,36 +580,16 @@ export default function AuthClientSimple() {
                   https://solola-api.onrender.com/api), puis redeployez le frontend.
                 </div>
               ) : null}
-              <div className="flex flex-col gap-2">
-                <button
-                  type="button"
-                  disabled
-                  className="btn-outline-neon w-full rounded-2xl py-3 text-sm font-semibold opacity-60"
-                  title="Bientôt disponible"
-                >
-                  Continuer avec Google
-                </button>
-                <button
-                  type="button"
-                  disabled
-                  className="btn-outline-neon w-full rounded-2xl py-3 text-sm font-semibold opacity-60"
-                  title="Bientôt disponible"
-                >
-                  Continuer avec Apple
-                </button>
-                <button
-                  type="button"
-                  onClick={() => {
-                    setTab("phone");
-                    setStatus("");
-                  }}
-                  className="btn-outline-neon w-full rounded-2xl py-3 text-sm font-semibold"
-                >
-                  Continuer avec téléphone (OTP)
-                </button>
-              </div>
-
-              <div className="h-px bg-gradient-to-r from-transparent via-white/20 to-transparent" />
+              <button
+                type="button"
+                onClick={() => {
+                  setTab("phone");
+                  setStatus("");
+                }}
+                className="w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm font-semibold text-[#10172b] hover:bg-slate-50"
+              >
+                Continuer avec téléphone (code SMS)
+              </button>
 
               {authMode === "register" ? (
                 <input
