@@ -5,7 +5,8 @@ import { useParams, useRouter } from "next/navigation";
 import { AuthGuard } from "../../../components/nextalkauthguard";
 import { getStoredUser } from "../../../lib/nextalksession";
 import { fetchCsrfToken } from "../../../services/nextalksecurity";
-import { sendChatMessage, getChatMessages, deleteChatMessage, type ChatMessage } from "../../../services/nextalkchat";
+import { getChatMessages, deleteChatMessage, type ChatMessage } from "../../../services/nextalkchat";
+import { sendMessageWithOptionalMedia } from "../../../services/nextalkpublish";
 
 export default function ConversationPage() {
   const { contactId } = useParams<{ contactId: string }>();
@@ -13,6 +14,9 @@ export default function ConversationPage() {
   const me = typeof window !== "undefined" ? getStoredUser() : null;
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [text, setText] = useState("");
+  const [file, setFile] = useState<File | null>(null);
+  const [uploadProgress, setUploadProgress] = useState(0);
+  const [status, setStatus] = useState("");
   const [sending, setSending] = useState(false);
   const bottomRef = useRef<HTMLDivElement>(null);
 
@@ -24,14 +28,26 @@ export default function ConversationPage() {
   useEffect(() => { bottomRef.current?.scrollIntoView({ behavior: "smooth" }); }, [messages]);
 
   const send = async () => {
-    if (!text.trim() || sending) return;
+    if ((!text.trim() && !file) || sending) return;
     try {
       setSending(true);
-      const csrf = await fetchCsrfToken();
-      const created = await sendChatMessage(contactId as string, { text: text.trim() }, csrf);
+      setStatus("");
+      const created = await sendMessageWithOptionalMedia({
+        chatId: contactId as string,
+        text,
+        mediaFile: file,
+        onUploadProgress: setUploadProgress
+      });
       setMessages((prev) => [...prev, created]);
       setText("");
-    } catch { } finally { setSending(false); }
+      setFile(null);
+      setUploadProgress(0);
+    } catch {
+      setStatus("Envoi impossible pour le moment.");
+    } finally {
+      setSending(false);
+      setUploadProgress(0);
+    }
   };
 
   const deleteMsg = async (msgId: string) => {
@@ -80,12 +96,31 @@ export default function ConversationPage() {
           <div ref={bottomRef} />
         </div>
         <div className="glass neon-border rounded-3xl p-3 mt-2">
+          {status ? <p className="mb-2 text-xs text-rose-300">{status}</p> : null}
+          {sending && uploadProgress > 0 ? (
+            <p className="mb-2 text-xs text-slate-300">Upload message: {uploadProgress}%</p>
+          ) : null}
           <div className="flex items-end gap-2">
             <textarea value={text} onChange={(e) => setText(e.target.value)} onKeyDown={(e) => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); void send(); } }} placeholder="Ecrire un message..." rows={1} className="input-neon flex-1 resize-none rounded-2xl px-4 py-2.5 text-sm" disabled={sending} />
-            <button aria-label="Envoyer le message" onClick={() => void send()} disabled={sending || !text.trim()} className="btn-neon shrink-0 rounded-2xl px-4 py-2.5 disabled:opacity-50">
+            <label className="btn-outline-neon cursor-pointer shrink-0 rounded-2xl px-3 py-2 text-xs">
+              Fichier
+              <input
+                type="file"
+                className="hidden"
+                accept="image/*,video/*,audio/*,.pdf,.doc,.docx,.xls,.xlsx"
+                onChange={(e) => {
+                  const picked = e.target.files?.[0] ?? null;
+                  e.target.value = "";
+                  setFile(picked);
+                }}
+                disabled={sending}
+              />
+            </label>
+            <button aria-label="Envoyer le message" onClick={() => void send()} disabled={sending || (!text.trim() && !file)} className="btn-neon shrink-0 rounded-2xl px-4 py-2.5 disabled:opacity-50">
               <svg viewBox="0 0 24 24" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="2"><path d="M22 2L11 13M22 2L15 22l-4-9-9-4 20-7z" /></svg>
             </button>
           </div>
+          {file ? <p className="mt-2 text-xs text-slate-400">Fichier prêt: {file.name}</p> : null}
         </div>
       </div>
     </AuthGuard>

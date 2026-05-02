@@ -5,24 +5,14 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { AuthGuard } from "../../components/nextalkauthguard";
 import { SectionHeader } from "../../components/nextalksectionheader";
-import api from "../../lib/nextalkapi";
 import { fetchCsrfToken } from "../../services/nextalksecurity";
 import {
-  broadcastToChannel,
   createChannel,
   getConversations,
   subscribeToChannel,
-  type ChatMessageType,
   type Conversation
 } from "../../services/nextalkchat";
-
-function guessType(file: File): ChatMessageType {
-  const t = String(file.type || "").toLowerCase();
-  if (t.startsWith("image/")) return "IMAGE";
-  if (t.startsWith("video/")) return "VIDEO";
-  if (t.startsWith("audio/")) return "VOICE";
-  return "TEXT";
-}
+import { publishToChannelWithMedia } from "../../services/nextalkpublish";
 
 export default function ChannelsPage() {
   const router = useRouter();
@@ -109,26 +99,6 @@ export default function ChannelsPage() {
     }
   };
 
-  const uploadOne = async (file: File, csrf: string): Promise<{ url: string; fileName: string }> => {
-    const formData = new FormData();
-    formData.append("file", file);
-    formData.append("folder", "channels");
-    const { data: upload } = await api.post("/media/upload", formData, {
-      headers: { "Content-Type": "multipart/form-data", "x-csrf-token": csrf },
-      onUploadProgress: (evt) => {
-        const total = evt.total ?? 0;
-        if (total > 0) {
-          setPublishProgress(Math.round((evt.loaded / total) * 100));
-        }
-      }
-    });
-    const url = String(upload?.url ?? upload?.secure_url ?? upload?.mediaUrl ?? "");
-    if (!url) {
-      throw new Error("upload_failed");
-    }
-    return { url, fileName: file.name };
-  };
-
   const publishNow = async () => {
     if (!selectedChannelId || publishing) return;
     if (!channelMessage.trim() && files.length === 0) return;
@@ -137,28 +107,12 @@ export default function ChannelsPage() {
       setPublishing(true);
       setStatus("");
       setPublishProgress(0);
-      const csrf = await fetchCsrfToken();
-
-      // 1) Envoyer le texte si présent
-      const text = channelMessage.trim();
-      if (text) {
-        await broadcastToChannel(selectedChannelId, { text, type: "TEXT" }, csrf);
-      }
-
-      // 2) Uploader et diffuser les fichiers (1 msg par fichier)
-      for (const file of files) {
-        setPublishProgress(0);
-        const uploaded = await uploadOne(file, csrf);
-        const inferred = guessType(file);
-
-        // Pour les fichiers non supportés par le type (PDF/Word/Excel...), on envoie un message TEXT avec mediaUrl + fileName.
-        const payload =
-          inferred === "TEXT"
-            ? { type: "TEXT" as const, text: `📎 ${uploaded.fileName}`, mediaUrl: uploaded.url, fileName: uploaded.fileName }
-            : { type: inferred, text: undefined, mediaUrl: uploaded.url, fileName: uploaded.fileName };
-
-        await broadcastToChannel(selectedChannelId, payload as any, csrf);
-      }
+      await publishToChannelWithMedia({
+        channelId: selectedChannelId,
+        text: channelMessage,
+        files,
+        onUploadProgress: setPublishProgress
+      });
 
       setChannelMessage("");
       setFiles([]);

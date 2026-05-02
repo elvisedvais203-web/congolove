@@ -3,14 +3,14 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { AuthGuard } from "../../components/nextalkauthguard";
-import { createStory, getStoryFeed, viewStory } from "../../services/nextalkstories";
+import { getStoryFeed, viewStory } from "../../services/nextalkstories";
 import { fetchCsrfToken } from "../../services/nextalksecurity";
 import { getStoredUser } from "../../lib/nextalksession";
 import { broadcastToChannel, createChannel, getConversations, subscribeToChannel, type Conversation } from "../../services/nextalkchat";
 import Image from "next/image";
-import api from "../../lib/nextalkapi";
 import { SectionHeader } from "../../components/nextalksectionheader";
 import { SololaThemedLogo } from "../../components/sololathemedlogo";
+import { publishStoryWithMedia } from "../../services/nextalkpublish";
 
 type Story = {
   id: string;
@@ -160,28 +160,14 @@ export default function StoriesPage() {
         setPublishStatus("Format non supporte. Utilisez JPEG, PNG, WEBP, HEIC, MP4, MOV ou WEBM.");
         return;
       }
-      const formData = new FormData();
-      formData.append("file", file);
-      formData.append("folder", "stories");
-      const csrf = await fetchCsrfToken();
-      const { data: upload } = await api.post("/media/upload", formData, {
-        headers: {
-          "Content-Type": "multipart/form-data",
-          "x-csrf-token": csrf
-        },
-        onUploadProgress: (evt) => {
-          const total = evt.total ?? 0;
-          if (total > 0) {
-            setPublishProgress(Math.round((evt.loaded / total) * 100));
-          }
+      await publishStoryWithMedia({
+        mediaFile: file,
+        caption,
+        visibility: storyVisibility,
+        onUploadProgress: (percent) => {
+          setPublishProgress(percent);
         }
       });
-      await createStory({
-        mediaUrl: upload.url ?? upload.secure_url ?? upload.mediaUrl,
-        mediaType: file.type.startsWith("video") ? "VIDEO" : "IMAGE",
-        caption,
-        visibility: storyVisibility
-      }, csrf);
       setCaption("");
       setPublishStatus("Story publiee.");
       setPublishProgress(0);

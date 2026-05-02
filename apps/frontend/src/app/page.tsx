@@ -3,11 +3,11 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { type StoryItem } from "../components/nextalkstorybar";
-import { commentFeedPost, createFeedPost, getFeed, likeFeedPost, saveFeedPost } from "../services/nextalksocial";
-import { createStory, getStoryFeed } from "../services/nextalkstories";
+import { commentFeedPost, getFeed, likeFeedPost, saveFeedPost } from "../services/nextalksocial";
+import { getStoryFeed } from "../services/nextalkstories";
 import { fetchCsrfToken } from "../services/nextalksecurity";
-import api from "../lib/nextalkapi";
 import { SololaThemedLogo } from "../components/sololathemedlogo";
+import { publishFeedWithOptionalMedia, publishStoryWithMedia } from "../services/nextalkpublish";
 
 type FeedComment = {
   id: string;
@@ -145,24 +145,11 @@ export default function HomePage() {
     if ((!content && !postMediaFile) || busy) return;
     try {
       setBusy(true);
-      const csrf = await fetchCsrfToken();
-      let mediaUrl: string | undefined;
-      if (postMediaFile) {
-        const formData = new FormData();
-        formData.append("file", postMediaFile);
-        formData.append("folder", postMediaFile.type.startsWith("video/") ? "reels" : "posts");
-        const { data: upload } = await api.post("/media/upload", formData, {
-          headers: { "Content-Type": "multipart/form-data", "x-csrf-token": csrf },
-          onUploadProgress: (evt) => {
-            const total = evt.total ?? 0;
-            if (total > 0) {
-              setPostUploadProgress(Math.round((evt.loaded / total) * 100));
-            }
-          }
-        });
-        mediaUrl = upload?.url;
-      }
-      await createFeedPost({ content: content || "Nouvelle publication", mediaUrl }, csrf);
+      const created = await publishFeedWithOptionalMedia({
+        content,
+        mediaFile: postMediaFile,
+        onUploadProgress: setPostUploadProgress
+      });
       setComposer("");
       setPostMediaFile(null);
       setPostMediaPreview(null);
@@ -170,15 +157,8 @@ export default function HomePage() {
       setStatus("Publication envoyée.");
       setFeed((prev) => [
         {
-          id: `local-${Date.now()}`,
-          content,
-          mediaUrl: mediaUrl ?? null,
-          createdAt: new Date().toISOString(),
-          author: { id: "me", displayName: "Moi" },
-          likesCount: 0,
-          likedByMe: false,
-          savedByMe: false,
-          comments: []
+          ...(created as FeedPost),
+          comments: (created as FeedPost)?.comments ?? []
         },
         ...prev
       ]);
@@ -261,31 +241,11 @@ export default function HomePage() {
     try {
       setStoryPublishing(true);
       setStoryUploadProgress(0);
-      const csrf = await fetchCsrfToken();
-      const formData = new FormData();
-      formData.append("file", file);
-      formData.append("folder", "stories");
-      const { data: upload } = await api.post("/media/upload", formData, {
-        headers: { "Content-Type": "multipart/form-data", "x-csrf-token": csrf },
-        onUploadProgress: (evt) => {
-          const total = evt.total ?? 0;
-          if (total > 0) {
-            setStoryUploadProgress(Math.round((evt.loaded / total) * 100));
-          }
-        }
+      await publishStoryWithMedia({
+        mediaFile: file,
+        visibility: "PUBLIC",
+        onUploadProgress: setStoryUploadProgress
       });
-      const mediaUrl = String(upload?.url ?? upload?.secure_url ?? upload?.mediaUrl ?? "");
-      if (!mediaUrl) {
-        throw new Error("upload_missing_url");
-      }
-      await createStory(
-        {
-          mediaUrl,
-          mediaType: file.type.startsWith("video/") ? "VIDEO" : "IMAGE",
-          visibility: "PUBLIC"
-        },
-        csrf
-      );
       setStatus("Story publiée.");
       await loadAll();
     } catch {

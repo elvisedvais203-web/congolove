@@ -8,6 +8,7 @@ import { fetchCsrfToken } from "../../services/nextalksecurity";
 import { getFeed, getSavedFeed } from "../../services/nextalksocial";
 import { getStoredUser } from "../../lib/nextalksession";
 import { SololaThemedLogo } from "../../components/sololathemedlogo";
+import { uploadMediaWithRetry } from "../../services/nextalkpublish";
 
 async function fileToDataUrl(file: File) {
   return await new Promise<string>((resolve, reject) => {
@@ -128,15 +129,7 @@ export default function ProfilePage() {
     try {
       setPhotoUploading(true);
       const csrf = await fetchCsrfToken();
-      const formData = new FormData();
-      formData.append("file", file);
-      formData.append("folder", "profiles");
-      const { data: upload } = await api.post("/media/upload", formData, {
-        headers: {
-          "Content-Type": "multipart/form-data",
-          "x-csrf-token": csrf
-        }
-      });
+      const upload = await uploadMediaWithRetry(file, "profiles");
 
       await api.post(
         "/profile/photo",
