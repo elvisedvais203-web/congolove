@@ -8,10 +8,10 @@
 - CDN media via Cloudinary ou S3+CloudFront
 - DNS et SSL via Cloudflare
 
-## Domaines de production (congolove.com)
-- Frontend: https://app.congolove.com
-- API Backend: https://api.congolove.com
-- Domaine principal: https://congolove.com (redirection vers app.congolove.com)
+## Domaines de production
+- Frontend: https://app.solola.com
+- API Backend: https://solola-api.onrender.com
+- Domaine principal: https://solola.com (redirection vers app.solola.com)
 
 ## Etapes backend
 1. Configurer variables .env backend.
@@ -23,46 +23,46 @@
 4. Sur Render:
    - Build command: npm install ; npm run build --workspace @nextalk/backend
    - Start command: npm start --workspace @nextalk/backend
-   - Variables: DATABASE_URL, REDIS_URL, JWT_*, FIREBASE_*, CORS_ORIGIN=https://app.congolove.com
+   - Variables: DATABASE_URL, REDIS_URL, JWT_*, FIREBASE_*, CORS_ORIGIN=https://app.solola.com
 
 ## Etapes frontend
 1. Configurer variables .env frontend.
 2. Importer projet sur Vercel.
-3. Definir NEXT_PUBLIC_API_URL=https://api.congolove.com/api et NEXT_PUBLIC_SOCKET_URL=https://api.congolove.com.
+3. Definir NEXT_PUBLIC_API_URL=https://solola-api.onrender.com/api et NEXT_PUBLIC_SOCKET_URL=https://solola-api.onrender.com.
 4. Deploy via branche main.
 
 ## DNS Cloudflare (minimum)
 - CNAME app -> cname.vercel-dns.com (proxy orange active)
 - CNAME api -> endpoint Render de l'API (proxy orange active)
-- @ (racine) -> redirection 301 vers https://app.congolove.com (Rule Cloudflare)
+- @ (racine) -> redirection 301 vers https://app.solola.com (Rule Cloudflare)
 
-## Runbook rapide (congolove.com)
+## Runbook rapide (solola.com)
 1. Backend sur Render
    - Importer le repo avec Blueprint depuis `render.yaml`.
-   - Verifier que le service `congolove-api` est cree.
+   - Verifier que le service `solola-api` est cree.
    - Ajouter les secrets manquants: `DATABASE_URL`, `REDIS_URL`, `JWT_ACCESS_SECRET`, `JWT_REFRESH_SECRET`, `FIREBASE_PROJECT_ID`, `FIREBASE_CLIENT_EMAIL`, `FIREBASE_PRIVATE_KEY` (ou `FIREBASE_SERVICE_ACCOUNT_JSON`).
-   - Ajouter le domaine custom `api.congolove.com` dans Render.
+   - Ajouter le domaine custom `solola-api.onrender.com` dans Render.
 
 2. Frontend sur Vercel
    - Importer le repo sur Vercel.
    - Root directory: `apps/frontend`.
    - Variables frontend:
-     - `NEXT_PUBLIC_API_URL=https://api.congolove.com/api`
-     - `NEXT_PUBLIC_SOCKET_URL=https://api.congolove.com`
+     - `NEXT_PUBLIC_API_URL=https://solola-api.onrender.com/api`
+     - `NEXT_PUBLIC_SOCKET_URL=https://solola-api.onrender.com`
        - `NEXT_PUBLIC_FIREBASE_API_KEY=...`
        - `NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN=...`
        - `NEXT_PUBLIC_FIREBASE_PROJECT_ID=...`
        - `NEXT_PUBLIC_FIREBASE_APP_ID=...`
-   - Ajouter le domaine custom `app.congolove.com`.
+   - Ajouter le domaine custom `app.solola.com`.
 
 3. Cloudflare DNS
    - Enregistrement CNAME `app` -> `cname.vercel-dns.com`.
-   - Enregistrement CNAME `api` -> l'hote Render fourni (ex: `congolove-api.onrender.com`).
-   - Regle de redirection: `https://congolove.com/*` -> `https://app.congolove.com/$1` (301).
+   - Enregistrement CNAME `api` -> l'hote Render fourni (ex: `solola-api.onrender.com`).
+   - Regle de redirection: `https://solola.com/*` -> `https://app.solola.com/$1` (301).
 
 4. Firebase Auth
    - Activer Phone Authentication dans Firebase Console.
-   - Ajouter les domaines autorises (`app.congolove.com`, `localhost`).
+   - Ajouter les domaines autorises (`app.solola.com`, `localhost`).
    - Generer une cle de service et renseigner les variables backend `FIREBASE_*`.
 
 ## Checklist securite

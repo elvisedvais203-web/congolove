@@ -11,6 +11,7 @@ function resolveApiBaseUrl(): string {
       return "http://localhost:4000/api";
     }
     // Fallback when NEXT_PUBLIC_API_URL is missing in cloud deployments.
+    // Use the Solola Render API service by default.
     if (hostname.endsWith(".onrender.com")) {
       return `${protocol}//solola-api.onrender.com/api`;
     }
