@@ -104,7 +104,7 @@ export default function AuthClientSimple() {
   const nextPath = searchParams.get("next") || "/dashboard";
   const apiConfigured = Boolean(process.env.NEXT_PUBLIC_API_URL) || process.env.NODE_ENV !== "production";
   const [tab, setTab] = useState<"phone" | "email">("email");
-  const [authMode, setAuthMode] = useState<"login" | "register" | "reset">("register");
+  const [authMode, setAuthMode] = useState<"login" | "register" | "reset">("login");
 
   useEffect(() => {
     if (isLoggedIn()) {
@@ -353,52 +353,128 @@ export default function AuthClientSimple() {
   };
 
   const emailTrimmed = email.trim();
-  const usernameTrimmed = displayName.trim();
   const passwordOk = password.length >= 8;
   const confirmOk = authMode !== "register" || password === confirmPassword;
   const canSubmitEmail =
     authMode === "login"
       ? Boolean(emailTrimmed) && Boolean(password)
       : authMode === "register"
-        ? Boolean(emailTrimmed) && Boolean(usernameTrimmed) && passwordOk && confirmOk
+        ? Boolean(emailTrimmed) && passwordOk && confirmOk
         : Boolean(emailTrimmed);
 
   return (
-    <div className="flex min-h-[80vh] items-center justify-center py-8">
-      <section className="w-full max-w-md animate-slide-up">
-        <div className="mb-8 text-center">
-          <div className="mx-auto mb-4 flex w-full justify-center">
-            <SololaThemedLogo width={64} height={64} className="rounded-2xl" priority />
+    <div className="mx-auto flex min-h-[80vh] max-w-4xl items-center justify-center px-4 py-10">
+      <div className="grid w-full gap-5 lg:grid-cols-[1.2fr_0.8fr] lg:items-center">
+        <section className="hidden lg:block">
+          <div className="glass neon-border rounded-3xl p-8">
+            <div className="flex items-center gap-3">
+              <SololaThemedLogo width={54} height={54} className="rounded-2xl" priority sizes="54px" />
+              <div>
+                <h1 className="font-heading text-4xl font-bold text-white">Solola</h1>
+                <p className="mt-1 text-sm text-slate-300">Connecte-toi pour partager, publier et discuter.</p>
+              </div>
+            </div>
+            <div className="mt-6 grid gap-3 md:grid-cols-2">
+              <div className="rounded-2xl border border-white/10 bg-black/20 p-4">
+                <p className="text-xs uppercase tracking-[0.18em] text-slate-400">Stories</p>
+                <p className="mt-2 text-sm text-slate-200">Publie des photos et vidéos qui expirent.</p>
+              </div>
+              <div className="rounded-2xl border border-white/10 bg-black/20 p-4">
+                <p className="text-xs uppercase tracking-[0.18em] text-slate-400">Reels</p>
+                <p className="mt-2 text-sm text-slate-200">Partage des vidéos courtes, likes et commentaires.</p>
+              </div>
+              <div className="rounded-2xl border border-white/10 bg-black/20 p-4 md:col-span-2">
+                <p className="text-xs uppercase tracking-[0.18em] text-slate-400">Messages & Canaux</p>
+                <p className="mt-2 text-sm text-slate-200">Discute et diffuse dans tes canaux (texte + médias).</p>
+              </div>
+            </div>
           </div>
-          <h1 className="font-heading text-4xl font-bold text-white">Solola</h1>
-          <p className="mt-2 text-sm text-[var(--muted)]">
-            Connecte-toi, partage, discute en temps réel.
-          </p>
-        </div>
+        </section>
 
-        <div className="glass rounded-4xl p-8 neon-border space-y-4">
-          <div className="grid grid-cols-2 gap-2">
-            <button
-              type="button"
-              onClick={() => {
-                setTab("phone");
-                setStatus("");
-              }}
-              className={`rounded-2xl px-3 py-2 text-sm font-semibold ${tab === "phone" ? "btn-neon" : "btn-outline-neon"}`}
-            >
-              Telephone
-            </button>
-            <button
-              type="button"
-              onClick={() => {
-                setTab("email");
-                setStatus("");
-              }}
-              className={`rounded-2xl px-3 py-2 text-sm font-semibold ${tab === "email" ? "btn-neon" : "btn-outline-neon"}`}
-            >
-              Email
-            </button>
-          </div>
+        <section className="w-full animate-slide-up">
+          <div className="mx-auto w-full max-w-md">
+            <div className="mb-4 text-center lg:hidden">
+              <div className="mx-auto mb-3 flex w-full justify-center">
+                <SololaThemedLogo width={64} height={64} className="rounded-2xl" priority sizes="64px" />
+              </div>
+              <h1 className="font-heading text-4xl font-bold text-white">Solola</h1>
+              <p className="mt-2 text-sm text-[var(--muted)]">Connecte-toi pour continuer.</p>
+            </div>
+
+            <div className="rounded-3xl border border-black/10 bg-white p-6 shadow-[0_18px_60px_rgba(0,0,0,0.35)]">
+              <div className="mb-4 flex items-center justify-between gap-3">
+                <div>
+                  <p className="text-sm font-semibold text-[#10172b]">
+                    {authMode === "login" ? "Connexion" : authMode === "register" ? "Inscription" : "Mot de passe"}
+                  </p>
+                  <p className="mt-0.5 text-xs text-slate-600">
+                    {authMode === "login"
+                      ? "Entre tes identifiants pour te connecter."
+                      : authMode === "register"
+                        ? "Crée ton compte en quelques secondes."
+                        : "Demande ou applique un reset de mot de passe."}
+                  </p>
+                </div>
+                <div className="hidden sm:block">
+                  <SololaThemedLogo width={34} height={34} className="rounded-xl" priority sizes="34px" />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-2">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setAuthMode("login");
+                    setStatus("");
+                  }}
+                  className={`rounded-xl px-3 py-2 text-sm font-semibold ${
+                    authMode === "login" ? "bg-[#10172b] text-white" : "bg-slate-100 text-slate-700 hover:bg-slate-200"
+                  }`}
+                >
+                  Se connecter
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setAuthMode("register");
+                    setStatus("");
+                  }}
+                  className={`rounded-xl px-3 py-2 text-sm font-semibold ${
+                    authMode === "register" ? "bg-[#10172b] text-white" : "bg-slate-100 text-slate-700 hover:bg-slate-200"
+                  }`}
+                >
+                  S’inscrire
+                </button>
+              </div>
+
+              <div className="mt-4 grid grid-cols-2 gap-2">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setTab("email");
+                    setStatus("");
+                  }}
+                  className={`rounded-xl px-3 py-2 text-sm font-semibold ${
+                    tab === "email" ? "border border-slate-200 bg-white text-[#10172b]" : "bg-slate-100 text-slate-700 hover:bg-slate-200"
+                  }`}
+                >
+                  Email
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setTab("phone");
+                    setStatus("");
+                  }}
+                  className={`rounded-xl px-3 py-2 text-sm font-semibold ${
+                    tab === "phone" ? "border border-slate-200 bg-white text-[#10172b]" : "bg-slate-100 text-slate-700 hover:bg-slate-200"
+                  }`}
+                >
+                  Téléphone
+                </button>
+              </div>
+
+              <div className="mt-4 space-y-3">
 
           {tab === "phone" ? (
             <>
@@ -515,16 +591,16 @@ export default function AuthClientSimple() {
                 <input
                   value={displayName}
                   onChange={(e) => setDisplayName(e.target.value)}
-                  className="input-neon w-full rounded-2xl px-4 py-3.5 text-sm"
-                  placeholder="Nom d’utilisateur"
+                  className="w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm text-[#10172b] placeholder:text-slate-400 focus:border-slate-300 focus:outline-none focus:ring-2 focus:ring-[rgba(76,111,255,0.25)]"
+                  placeholder="Nom (optionnel)"
                 />
               ) : null}
 
               <input
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                className="input-neon w-full rounded-2xl px-4 py-3.5 text-sm"
-                placeholder="Email ou numéro"
+                className="w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm text-[#10172b] placeholder:text-slate-400 focus:border-slate-300 focus:outline-none focus:ring-2 focus:ring-[rgba(76,111,255,0.25)]"
+                placeholder="Téléphone, nom d'utilisateur ou email"
                 inputMode="email"
                 autoComplete="email"
               />
@@ -532,7 +608,7 @@ export default function AuthClientSimple() {
               <input
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                className="input-neon w-full rounded-2xl px-4 py-3.5 text-sm"
+                className="w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm text-[#10172b] placeholder:text-slate-400 focus:border-slate-300 focus:outline-none focus:ring-2 focus:ring-[rgba(76,111,255,0.25)]"
                 placeholder={authMode === "reset" && resetToken.trim() ? "Nouveau mot de passe" : "Mot de passe"}
                 type="password"
                 autoComplete={authMode === "login" ? "current-password" : "new-password"}
@@ -542,8 +618,8 @@ export default function AuthClientSimple() {
                 <input
                   value={confirmPassword}
                   onChange={(e) => setConfirmPassword(e.target.value)}
-                  className="input-neon w-full rounded-2xl px-4 py-3.5 text-sm"
-                  placeholder="Confirmer le mot de passe"
+                  className="w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm text-[#10172b] placeholder:text-slate-400 focus:border-slate-300 focus:outline-none focus:ring-2 focus:ring-[rgba(76,111,255,0.25)]"
+                  placeholder="Confirmer le mot de passe (8 caractères min)"
                   type="password"
                   autoComplete="new-password"
                 />
@@ -553,7 +629,7 @@ export default function AuthClientSimple() {
                 <input
                   value={resetToken}
                   onChange={(e) => setResetToken(e.target.value)}
-                  className="input-neon w-full rounded-2xl px-4 py-3.5 text-sm"
+                  className="w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm text-[#10172b] placeholder:text-slate-400 focus:border-slate-300 focus:outline-none focus:ring-2 focus:ring-[rgba(76,111,255,0.25)]"
                   placeholder="Token reset (laisser vide pour le demander)"
                 />
               ) : null}
@@ -562,7 +638,7 @@ export default function AuthClientSimple() {
                 type="button"
                 onClick={() => void submitEmailAuth()}
                 disabled={submittingEmail || !canSubmitEmail}
-                className="btn-neon w-full rounded-2xl py-3.5 text-sm font-bold tracking-wide disabled:opacity-60"
+                className="w-full rounded-xl bg-[#4c6fff] py-3 text-sm font-bold text-white shadow-[0_12px_30px_rgba(76,111,255,0.25)] transition hover:brightness-110 disabled:opacity-50"
               >
                 {submittingEmail
                   ? "Veuillez patienter..."
@@ -575,63 +651,26 @@ export default function AuthClientSimple() {
                         : "Demander le reset"}
               </button>
 
-              <p className="text-[11px] leading-relaxed text-slate-400">
-                En vous inscrivant, vous acceptez nos{" "}
-                <Link className="text-slate-200 underline underline-offset-2" href="/legal/terms">
-                  conditions
-                </Link>{" "}
-                et notre{" "}
-                <Link className="text-slate-200 underline underline-offset-2" href="/legal/privacy">
-                  politique de confidentialité
-                </Link>
-                .
-              </p>
-
-              <div className="flex items-center justify-between gap-3 text-xs text-slate-300">
-                {authMode === "register" ? (
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setAuthMode("login");
-                      setStatus("");
-                    }}
-                    className="underline underline-offset-2"
-                  >
-                    Tu as déjà un compte ? Se connecter
-                  </button>
-                ) : (
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setAuthMode("register");
-                      setStatus("");
-                    }}
-                    className="underline underline-offset-2"
-                  >
-                    Nouveau sur Solola ? S’inscrire
-                  </button>
-                )}
-
-                <button
-                  type="button"
-                  onClick={() => {
-                    setAuthMode("reset");
-                    setStatus("");
-                  }}
-                  className="text-slate-400 underline underline-offset-2"
-                >
-                  Mot de passe oublié
-                </button>
-              </div>
+              {authMode === "register" ? (
+                <p className="pt-1 text-[11px] leading-relaxed text-slate-600">
+                  En t’inscrivant, tu acceptes nos{" "}
+                  <Link className="text-slate-900 underline underline-offset-2" href="/legal/terms">
+                    conditions
+                  </Link>{" "}
+                  et notre{" "}
+                  <Link className="text-slate-900 underline underline-offset-2" href="/legal/privacy">
+                    politique de confidentialité
+                  </Link>
+                  .
+                </p>
+              ) : null}
             </>
           )}
 
           {status && (
             <div
-              className={`rounded-xl px-4 py-3 text-sm font-medium transition-all ${
-                statusType === "success"
-                  ? "border border-[#39ff14]/30 bg-[#39ff14]/10 text-[#39ff14]"
-                  : "border border-[#ff4d4f]/30 bg-[#ff4d4f]/10 text-[#ff4d4f]"
+              className={`rounded-xl px-4 py-3 text-sm font-semibold ${
+                statusType === "success" ? "border border-emerald-200 bg-emerald-50 text-emerald-700" : "border border-rose-200 bg-rose-50 text-rose-700"
               }`}
             >
               {status}
@@ -639,38 +678,59 @@ export default function AuthClientSimple() {
           )}
 
           <div id="recaptcha-container" style={{ display: "none" }} />
-        </div>
+              </div>
 
-        <details className="mt-4 rounded-2xl border border-white/10 bg-black/20 px-4 py-3 text-left text-xs text-slate-400">
-          <summary className="cursor-pointer font-medium text-slate-300">
-            Le SMS n arrive pas ? Points a verifier
-          </summary>
-          <ul className="mt-2 list-disc space-y-1 pl-4">
-            <li>
-              Dans Firebase Console, menu Authentication puis Sign-in method : activer{" "}
-              <strong className="text-slate-300">Phone</strong>.
-            </li>
-            <li>
-              Toujours dans Authentication, onglet Settings, Authorized domains : ajouter{" "}
-              <strong className="text-slate-300">localhost</strong> (developpement) ou votre domaine.
-            </li>
-            <li>
-              Pour des <strong className="text-slate-300">vrais numeros</strong>, Firebase exige un compte de facturation
-              (plan Blaze ou facturation Google Cloud). Sans cela, l erreur{" "}
-              <code className="text-slate-300">auth/billing-not-enabled</code> apparait. En dev, vous pouvez utiliser des{" "}
-              <strong className="text-slate-300">numeros de test</strong> dans la console Firebase (pas de SMS).
-            </li>
-            <li>
-              Numero au format international <strong className="text-slate-300">+243...</strong>, sans espaces.
-            </li>
-            <li>Desactiver bloqueurs de pub / extensions qui bloquent reCAPTCHA, puis recharger la page.</li>
-          </ul>
-        </details>
+              <div className="mt-3 flex items-center justify-between text-xs">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setAuthMode("reset");
+                    setStatus("");
+                  }}
+                  className="text-slate-600 hover:text-slate-900 underline underline-offset-2"
+                >
+                  Mot de passe oublié ?
+                </button>
+                <Link href="/legal/privacy" className="text-slate-500 hover:text-slate-800 underline underline-offset-2">
+                  Confidentialité
+                </Link>
+              </div>
+            </div>
 
-        <p className="mt-3 text-center text-xs text-[var(--muted)]">
-          Si tout est bien configure, le SMS arrive en general en moins d une minute.
-        </p>
-      </section>
+            <div className="mt-3 rounded-3xl border border-white/10 bg-black/20 p-4 text-center text-sm text-slate-200">
+              {authMode === "login" ? (
+                <>
+                  Pas de compte ?{" "}
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setAuthMode("register");
+                      setStatus("");
+                    }}
+                    className="font-semibold text-white underline underline-offset-2"
+                  >
+                    Inscris-toi
+                  </button>
+                </>
+              ) : (
+                <>
+                  Tu as déjà un compte ?{" "}
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setAuthMode("login");
+                      setStatus("");
+                    }}
+                    className="font-semibold text-white underline underline-offset-2"
+                  >
+                    Connecte-toi
+                  </button>
+                </>
+              )}
+            </div>
+          </div>
+        </section>
+      </div>
     </div>
   );
 }
