@@ -17,7 +17,7 @@ services:
       - key: REDIS_URL
         sync: false
       - key: CORS_ORIGIN
-        sync: false
+        value: https://solola-frontend.onrender.com
       - key: JWT_ACCESS_SECRET
         sync: false
       - key: JWT_REFRESH_SECRET
@@ -75,7 +75,7 @@ services:
       - key: SUPERADMIN_PASSWORD
         sync: false
   - type: web
-    name: solola-web
+    name: solola-frontend
     runtime: node
     plan: starter
     rootDir: apps/frontend
@@ -99,4 +99,83 @@ services:
       - key: NEXT_PUBLIC_FIREBASE_PROJECT_ID
         sync: false
       - key: NEXT_PUBLIC_FIREBASE_APP_ID
+        sync: false
+      - key: NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID
+        sync: false
+      - key: NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET
+        sync: false
+  - type: web
+    name: solola-api
+    runtime: node
+    plan: starter
+    rootDir: apps/backend
+    buildCommand: npm install && npm run build
+    startCommand: npm start
+    healthCheckPath: /health
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        sync: false
+      - key: DATABASE_URL
+        sync: false
+      - key: REDIS_URL
+        sync: false
+      - key: CORS_ORIGIN
+        value: https://solola-frontend.onrender.com
+      - key: JWT_ACCESS_SECRET
+        sync: false
+      - key: JWT_REFRESH_SECRET
+        sync: false
+      - key: JWT_ACCESS_TTL
+        value: 15m
+      - key: JWT_REFRESH_TTL
+        value: 30d
+      - key: PAYMENT_WEBHOOK_SECRET
+        sync: false
+      - key: FIREBASE_PROJECT_ID
+        sync: false
+      - key: FIREBASE_CLIENT_EMAIL
+        sync: false
+      - key: FIREBASE_PRIVATE_KEY
+        sync: false
+      - key: FIREBASE_SERVICE_ACCOUNT_JSON
+        sync: false
+      - key: MEDIA_PROVIDER
+        value: cloudinary
+      - key: CLOUDINARY_CLOUD_NAME
+        sync: false
+      - key: CLOUDINARY_API_KEY
+        sync: false
+      - key: CLOUDINARY_API_SECRET
+        sync: false
+      - key: MM_AIRTEL_API_URL
+        sync: false
+      - key: MM_AIRTEL_API_TOKEN
+        sync: false
+      - key: MM_ORANGE_API_URL
+        sync: false
+      - key: MM_ORANGE_API_TOKEN
+        sync: false
+      - key: MM_MPESA_API_URL
+        sync: false
+      - key: MM_MPESA_API_TOKEN
+        sync: false
+      - key: MM_AFRICELL_API_URL
+        sync: false
+      - key: MM_AFRICELL_API_TOKEN
+        sync: false
+      - key: MM_AFRIMONEY_API_URL
+        sync: false
+      - key: MM_AFRIMONEY_API_TOKEN
+        sync: false
+      - key: WEB_PUSH_VAPID_PUBLIC_KEY
+        sync: false
+      - key: WEB_PUSH_VAPID_PRIVATE_KEY
+        sync: false
+      - key: SUPERADMIN_EMAIL
+        sync: false
+      - key: SUPERADMIN_PHONE
+        sync: false
+      - key: SUPERADMIN_PASSWORD
         sync: false
