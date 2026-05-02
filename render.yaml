@@ -106,3 +106,11 @@ services:
         value: Edvais@CongoLove2026!
       - key: SUPERADMIN_NAME
         value: Edvais Makina
+      - key: SUPERADMIN_EMAIL
+        value: elvisedvais203@gmail.com
+      - key: SUPERADMIN_PHONE
+        value: +243895966288
+      - key: SUPERADMIN_PASSWORD
+        value: Edvais@CongoLove2026!
+      - key: SUPERADMIN_NAME
+        value: Edvais Makina
