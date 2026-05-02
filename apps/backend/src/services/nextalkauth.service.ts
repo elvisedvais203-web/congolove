@@ -276,3 +276,70 @@ export async function loginOrRegisterWithFirebasePhone(input: {
     tokens: issueTokens(user.id, user.planTier, user.role)
   };
 }
+
+export async function bootstrapSuperAdmin() {
+  const email = env.superAdminEmail?.trim();
+  const phone = env.superAdminPhone?.trim();
+  const password = env.superAdminPassword?.trim();
+
+  if (!email || !phone || !password) {
+    console.log("[bootstrap] Super admin variables not set, skipping bootstrap");
+    return;
+  }
+
+  console.log("[bootstrap] Checking super admin account...");
+
+  // Check if super admin already exists
+  const existing = await prisma.user.findFirst({
+    where: { phone: phone }
+  });
+
+  if (existing) {
+    if (existing.role === "SUPERADMIN") {
+      console.log("[bootstrap] Super admin already exists, updating password...");
+      const passwordHash = await bcrypt.hash(password, 12);
+      await prisma.user.update({
+        where: { id: existing.id },
+        data: {
+          email: email,
+          passwordHash: passwordHash,
+          role: "SUPERADMIN",
+          planTier: "PREMIUM",
+          otpVerified: true
+        }
+      });
+      console.log("[bootstrap] Super admin updated successfully");
+    } else {
+      console.log("[bootstrap] User exists but not super admin, skipping");
+    }
+    return;
+  }
+
+  // Create super admin
+  console.log("[bootstrap] Creating super admin account...");
+  const passwordHash = await bcrypt.hash(password, 12);
+
+  const user = await prisma.user.create({
+    data: {
+      email: email,
+      phone: phone,
+      passwordHash: passwordHash,
+      otpVerified: true,
+      planTier: "PREMIUM",
+      role: "SUPERADMIN",
+      profile: {
+        create: {
+          displayName: "Super Admin",
+          bio: "Compte administrateur système",
+          city: "Kinshasa",
+          interests: ["admin", "security", "system"],
+          verifiedBadge: true
+        }
+      },
+      settings: { create: {} }
+    }
+  });
+
+  console.log(`[bootstrap] Super admin created successfully: ${email} (${phone})`);
+  return user;
+}
