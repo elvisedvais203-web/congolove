@@ -18,17 +18,17 @@ services:
       - key: NEXT_PUBLIC_PUSH_PUBLIC_KEY
         sync: false
       - key: NEXT_PUBLIC_FIREBASE_API_KEY
-        sync: false
+        value: AIzaSy...
       - key: NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN
-        sync: false
+        value: solola-app-18e88.firebaseapp.com
       - key: NEXT_PUBLIC_FIREBASE_PROJECT_ID
-        sync: false
+        value: solola-app-18e88
       - key: NEXT_PUBLIC_FIREBASE_APP_ID
-        sync: false
+        value: 1:830530173370:web:c305783c067825d8f34583
       - key: NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID
-        sync: false
+        value: 830530173370
       - key: NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET
-        sync: false
+        value: solola-app-18e88.firebasestorage.app
   - type: web
     name: solola-api
     runtime: node
