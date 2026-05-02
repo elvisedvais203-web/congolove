@@ -4,6 +4,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 import { canAccessAdmin, getStoredUser } from "../lib/nextalksession";
+import { SololaThemedLogo } from "./sololathemedlogo";
 
 const baseLinks = [
   { href: "/", label: "Accueil", icon: "home" },
@@ -99,6 +100,9 @@ export function MobileNav() {
 
   return (
     <nav className="fixed bottom-0 left-0 right-0 z-50 border-t border-white/10 bg-[#08101ff2] px-2 pb-[max(0.5rem,env(safe-area-inset-bottom))] pt-2 backdrop-blur-xl md:hidden">
+      <div className="mb-1 flex items-center justify-center">
+        <SololaThemedLogo width={22} height={22} className="rounded-md opacity-85" />
+      </div>
       <ul className={`mx-auto grid max-w-xl gap-1 text-center ${links.length > 5 ? "grid-cols-6" : "grid-cols-5"}`}>
         {links.map((link) => {
           const isCreate = link.icon === "plus";

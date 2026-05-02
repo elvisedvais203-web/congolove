@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import {
   signInWithPhoneNumber,
@@ -10,7 +10,7 @@ import {
 } from "firebase/auth";
 import { auth } from "../../nextalkfirebase";
 import api from "../../lib/nextalkapi";
-import { storeSession } from "../../lib/nextalksession";
+import { isLoggedIn, storeSession } from "../../lib/nextalksession";
 import { SololaThemedLogo } from "../../components/sololathemedlogo";
 
 function formatPhoneInput(value: string) {
@@ -100,11 +100,17 @@ function firebaseAuthUserMessage(error: unknown): string {
 
 export default function AuthClientSimple() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const nextPath = searchParams.get("next") || "/dashboard";
   const apiConfigured = Boolean(process.env.NEXT_PUBLIC_API_URL) || process.env.NODE_ENV !== "production";
   const [tab, setTab] = useState<"phone" | "email">("email");
   const [authMode, setAuthMode] = useState<"login" | "register" | "reset">("register");
 
   useEffect(() => {
+    if (isLoggedIn()) {
+      router.replace(nextPath);
+      return;
+    }
     const root = document.documentElement;
     const prevTheme = root.getAttribute("data-theme");
     root.setAttribute("data-theme", "light");
@@ -233,7 +239,7 @@ export default function AuthClientSimple() {
       setStatus("Connexion reussie.");
       setStatusType("success");
       setTimeout(() => {
-        router.push("/dashboard");
+        router.push(nextPath);
       }, 500);
     } catch (error: unknown) {
       console.error("[auth] verifyCode / backend", error);
@@ -291,7 +297,7 @@ export default function AuthClientSimple() {
         });
         setStatus("Compte cree. Connexion reussie.");
         setStatusType("success");
-        setTimeout(() => router.push("/dashboard"), 500);
+        setTimeout(() => router.push(nextPath), 500);
         return;
       }
 
@@ -307,7 +313,7 @@ export default function AuthClientSimple() {
         });
         setStatus("Connexion reussie.");
         setStatusType("success");
-        setTimeout(() => router.push("/dashboard"), 500);
+        setTimeout(() => router.push(nextPath), 500);
         return;
       }
 
@@ -323,7 +329,7 @@ export default function AuthClientSimple() {
         });
         setStatus("Mot de passe reinitialise. Connexion reussie.");
         setStatusType("success");
-        setTimeout(() => router.push("/dashboard"), 500);
+        setTimeout(() => router.push(nextPath), 500);
         return;
       }
 
