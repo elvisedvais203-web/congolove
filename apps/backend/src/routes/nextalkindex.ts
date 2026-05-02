@@ -25,6 +25,16 @@ import { env } from "../config/nextalkenv";
 
 const router = Router();
 
+router.get("/", (_req, res) => {
+	res.json({
+		ok: true,
+		service: "NexTalk API",
+		message: "API root is active",
+		uptimeSec: Math.round(process.uptime()),
+		timestamp: new Date().toISOString()
+	});
+});
+
 router.get("/health", (_req, res) => {
 	res.json({
 		ok: true,
